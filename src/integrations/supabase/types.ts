@@ -14,7 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      books: {
+        Row: {
+          author: string
+          cover_url: string | null
+          created_at: string
+          genre: string | null
+          id: string
+          notes: string | null
+          pages: number | null
+          published_year: number | null
+          rating: number | null
+          series_id: string | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          author: string
+          cover_url?: string | null
+          created_at?: string
+          genre?: string | null
+          id?: string
+          notes?: string | null
+          pages?: number | null
+          published_year?: number | null
+          rating?: number | null
+          series_id?: string | null
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          author?: string
+          cover_url?: string | null
+          created_at?: string
+          genre?: string | null
+          id?: string
+          notes?: string | null
+          pages?: number | null
+          published_year?: number | null
+          rating?: number | null
+          series_id?: string | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "books_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      series: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
