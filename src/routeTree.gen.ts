@@ -9,12 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedMonAlbumRouteImport } from './routes/_authenticated/mon-album'
+import { Route as AuthenticatedAjouterSerieRouteImport } from './routes/_authenticated/ajouter-serie'
+import { Route as AuthenticatedAjouterLivreRouteImport } from './routes/_authenticated/ajouter-livre'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InscriptionRoute = InscriptionRouteImport.update({
   id: '/inscription',
   path: '/inscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,40 +36,106 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedMonAlbumRoute = AuthenticatedMonAlbumRouteImport.update({
+  id: '/mon-album',
+  path: '/mon-album',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAjouterSerieRoute =
+  AuthenticatedAjouterSerieRouteImport.update({
+    id: '/ajouter-serie',
+    path: '/ajouter-serie',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAjouterLivreRoute =
+  AuthenticatedAjouterLivreRouteImport.update({
+    id: '/ajouter-livre',
+    path: '/ajouter-livre',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/inscription': typeof InscriptionRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
+  '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
+  '/mon-album': typeof AuthenticatedMonAlbumRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/inscription': typeof InscriptionRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
+  '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
+  '/mon-album': typeof AuthenticatedMonAlbumRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/inscription': typeof InscriptionRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
+  '/_authenticated/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
+  '/_authenticated/mon-album': typeof AuthenticatedMonAlbumRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inscription'
+  fullPaths:
+    | '/'
+    | '/inscription'
+    | '/sitemap.xml'
+    | '/ajouter-livre'
+    | '/ajouter-serie'
+    | '/mon-album'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inscription'
-  id: '__root__' | '/' | '/inscription'
+  to:
+    | '/'
+    | '/inscription'
+    | '/sitemap.xml'
+    | '/ajouter-livre'
+    | '/ajouter-serie'
+    | '/mon-album'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/inscription'
+    | '/sitemap.xml'
+    | '/_authenticated/ajouter-livre'
+    | '/_authenticated/ajouter-serie'
+    | '/_authenticated/mon-album'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   InscriptionRoute: typeof InscriptionRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inscription': {
       id: '/inscription'
       path: '/inscription'
       fullPath: '/inscription'
       preLoaderRoute: typeof InscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -65,12 +145,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/mon-album': {
+      id: '/_authenticated/mon-album'
+      path: '/mon-album'
+      fullPath: '/mon-album'
+      preLoaderRoute: typeof AuthenticatedMonAlbumRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajouter-serie': {
+      id: '/_authenticated/ajouter-serie'
+      path: '/ajouter-serie'
+      fullPath: '/ajouter-serie'
+      preLoaderRoute: typeof AuthenticatedAjouterSerieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajouter-livre': {
+      id: '/_authenticated/ajouter-livre'
+      path: '/ajouter-livre'
+      fullPath: '/ajouter-livre'
+      preLoaderRoute: typeof AuthenticatedAjouterLivreRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAjouterLivreRoute: typeof AuthenticatedAjouterLivreRoute
+  AuthenticatedAjouterSerieRoute: typeof AuthenticatedAjouterSerieRoute
+  AuthenticatedMonAlbumRoute: typeof AuthenticatedMonAlbumRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAjouterLivreRoute: AuthenticatedAjouterLivreRoute,
+  AuthenticatedAjouterSerieRoute: AuthenticatedAjouterSerieRoute,
+  AuthenticatedMonAlbumRoute: AuthenticatedMonAlbumRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   InscriptionRoute: InscriptionRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
