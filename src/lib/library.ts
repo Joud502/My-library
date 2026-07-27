@@ -1,0 +1,83 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export type Book = {
+  id: string;
+  user_id: string;
+  title: string;
+  author: string;
+  cover_url: string | null;
+  genre: string | null;
+  published_year: number | null;
+  pages: number | null;
+  rating: number | null;
+  status: string;
+  notes: string | null;
+  series_id: string | null;
+  created_at: string;
+};
+
+export type Serie = {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  cover_url: string | null;
+  created_at: string;
+};
+
+export const STATUS_LABELS: Record<string, string> = {
+  a_lire: "À lire",
+  en_cours: "En cours",
+  lu: "Lu",
+};
+
+export async function fetchBooks(): Promise<Book[]> {
+  const { data, error } = await supabase
+    .from("books")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Book[];
+}
+
+export async function fetchSeries(): Promise<Serie[]> {
+  const { data, error } = await supabase
+    .from("series")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Serie[];
+}
+
+export async function deleteBook(id: string) {
+  const { error } = await supabase.from("books").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteSerie(id: string) {
+  const { error } = await supabase.from("series").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Uploads a cover to the private bucket and returns its storage path. */
+export async function uploadCover(file: File): Promise<string> {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) throw new Error("Session expirée, reconnectez-vous.");
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from("covers").upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}
+
+export async function getCoverUrl(path: string | null): Promise<string | null> {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const { data, error } = await supabase.storage.from("covers").createSignedUrl(path, 3600);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
