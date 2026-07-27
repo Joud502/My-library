@@ -11,16 +11,16 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Connexion — Mon Album, bibliothèque personnelle" },
+      { title: "Mon album personelle" },
       {
         name: "description",
         content:
           "Connectez-vous à Mon Album pour retrouver votre bibliothèque personnelle : vos livres, vos séries et vos lectures en cours.",
       },
-      { property: "og:title", content: "Connexion — Mon Album" },
+      { property: "og:title", content: "Mon album personelle" },
       {
         property: "og:description",
-        content: "Accédez à votre bibliothèque personnelle de livres et de séries.",
+        content: "Connectez-vous à Mon Album pour retrouver votre bibliothèque personnelle : vos livres, vos séries et vos lectures en cours.",
       },
     ],
   }),

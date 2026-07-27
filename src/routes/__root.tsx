@@ -79,19 +79,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Mon Album — gestion de bibliothèque personnelle" },
+      { title: "Mon album personelle" },
       {
         name: "description",
         content:
-          "Mon Album : cataloguez vos livres et vos séries, suivez vos lectures et triez votre bibliothèque personnelle.",
+          "Connectez-vous à Mon Album pour retrouver votre bibliothèque personnelle : vos livres, vos séries et vos lectures en cours.",
       },
-      { property: "og:title", content: "Mon Album — bibliothèque personnelle" },
+      { property: "og:title", content: "Mon album personelle" },
       {
         property: "og:description",
-        content: "Cataloguez vos livres et séries et suivez vos lectures.",
+        content: "Connectez-vous à Mon Album pour retrouver votre bibliothèque personnelle : vos livres, vos séries et vos lectures en cours.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Mon album personelle" },
+      { name: "twitter:description", content: "Connectez-vous à Mon Album pour retrouver votre bibliothèque personnelle : vos livres, vos séries et vos lectures en cours." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/SUKtqMgFtlV4MDgfOPFBMRS3NRx1/social-images/social-1785181497229-RobloxScreenShot20260624_144224001.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/SUKtqMgFtlV4MDgfOPFBMRS3NRx1/social-images/social-1785181497229-RobloxScreenShot20260624_144224001.webp" },
     ],
 
     links: [
@@ -99,7 +103,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,
