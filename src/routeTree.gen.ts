@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedMonAlbumRouteImport } from './routes/_authenticated/mon-album'
@@ -25,6 +26,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const InscriptionRoute = InscriptionRouteImport.update({
   id: '/inscription',
   path: '/inscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmationRoute = ConfirmationRouteImport.update({
+  id: '/confirmation',
+  path: '/confirmation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -56,6 +62,7 @@ const AuthenticatedAjouterLivreRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
@@ -84,6 +93,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/confirmation'
     | '/inscription'
     | '/sitemap.xml'
     | '/ajouter-livre'
@@ -92,6 +102,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/confirmation'
     | '/inscription'
     | '/sitemap.xml'
     | '/ajouter-livre'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/confirmation'
     | '/inscription'
     | '/sitemap.xml'
     | '/_authenticated/ajouter-livre'
@@ -111,6 +123,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ConfirmationRoute: typeof ConfirmationRoute
   InscriptionRoute: typeof InscriptionRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
@@ -129,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/inscription'
       fullPath: '/inscription'
       preLoaderRoute: typeof InscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmation': {
+      id: '/confirmation'
+      path: '/confirmation'
+      fullPath: '/confirmation'
+      preLoaderRoute: typeof ConfirmationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -187,6 +207,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ConfirmationRoute: ConfirmationRoute,
   InscriptionRoute: InscriptionRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
