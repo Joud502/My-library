@@ -53,7 +53,7 @@ function SignupPage() {
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/confirmation`,
         data: { display_name: parsed.data.displayName },
       },
     });
