@@ -83,8 +83,8 @@ export const adminOverview = createServerFn({ method: "GET" }).handler(async () 
         .limit(500),
       supabaseAdmin.from("profiles").select("id, display_name, created_at"),
       supabaseAdmin
-        .from("ip_bans")
-        .select("id, ip, reason, created_at")
+        .from("banned_emails")
+        .select("id, email, user_id, reason, created_at")
         .order("created_at", { ascending: false }),
     ]);
 
