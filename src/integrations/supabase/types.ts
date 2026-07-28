@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_login_attempts: {
+        Row: {
+          created_at: string
+          fail_count: number
+          ip: string
+          locked_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fail_count?: number
+          ip: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fail_count?: number
+          ip?: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       books: {
         Row: {
           author: string
@@ -69,6 +93,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ip_bans: {
+        Row: {
+          created_at: string
+          id: string
+          ip: string
+          reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
