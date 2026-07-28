@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as QuretiRouteImport } from './routes/qureti'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -21,6 +22,11 @@ import { Route as AuthenticatedAjouterLivreRouteImport } from './routes/_authent
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuretiRoute = QuretiRouteImport.update({
+  id: '/qureti',
+  path: '/qureti',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InscriptionRoute = InscriptionRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
+  '/qureti': typeof QuretiRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
+  '/qureti': typeof QuretiRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
+  '/qureti': typeof QuretiRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/_authenticated/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/confirmation'
     | '/inscription'
+    | '/qureti'
     | '/sitemap.xml'
     | '/ajouter-livre'
     | '/ajouter-serie'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/confirmation'
     | '/inscription'
+    | '/qureti'
     | '/sitemap.xml'
     | '/ajouter-livre'
     | '/ajouter-serie'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/confirmation'
     | '/inscription'
+    | '/qureti'
     | '/sitemap.xml'
     | '/_authenticated/ajouter-livre'
     | '/_authenticated/ajouter-serie'
@@ -125,6 +137,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConfirmationRoute: typeof ConfirmationRoute
   InscriptionRoute: typeof InscriptionRoute
+  QuretiRoute: typeof QuretiRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qureti': {
+      id: '/qureti'
+      path: '/qureti'
+      fullPath: '/qureti'
+      preLoaderRoute: typeof QuretiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inscription': {
@@ -209,6 +229,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConfirmationRoute: ConfirmationRoute,
   InscriptionRoute: InscriptionRoute,
+  QuretiRoute: QuretiRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
