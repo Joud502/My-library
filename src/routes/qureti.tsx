@@ -247,7 +247,7 @@ function Dashboard({
               ["Utilisateurs", data.users.length],
               ["Livres", data.books.length],
               ["Séries", data.series.length],
-              ["IP bannies", data.bans.length],
+              ["Comptes bannis", data.bans.length],
             ].map(([label, value]) => (
               <div key={label as string} className="rounded-xl bg-card p-4 shadow-card">
                 <p className="text-xs text-muted-foreground">{label}</p>
