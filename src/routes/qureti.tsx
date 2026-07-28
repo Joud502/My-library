@@ -196,12 +196,12 @@ function Dashboard({
   onLogout: () => void;
 }) {
   const deleteBook = useServerFn(adminDeleteBook);
-  const banIp = useServerFn(adminBanIp);
-  const unbanIp = useServerFn(adminUnbanIp);
+  const banEmail = useServerFn(adminBanEmail);
+  const unbanEmail = useServerFn(adminUnbanEmail);
 
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ip, setIp] = useState("");
+  const [email, setEmail] = useState("");
   const [reason, setReason] = useState("");
 
   async function load() {
