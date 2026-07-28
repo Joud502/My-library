@@ -9,8 +9,8 @@ import {
   adminLogout,
   adminOverview,
   adminDeleteBook,
-  adminBanIp,
-  adminUnbanIp,
+  adminBanEmail,
+  adminUnbanEmail,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
