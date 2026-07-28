@@ -83,8 +83,8 @@ export const adminOverview = createServerFn({ method: "GET" }).handler(async () 
         .limit(500),
       supabaseAdmin.from("profiles").select("id, display_name, created_at"),
       supabaseAdmin
-        .from("ip_bans")
-        .select("id, ip, reason, created_at")
+        .from("banned_emails")
+        .select("id, email, user_id, reason, created_at")
         .order("created_at", { ascending: false }),
     ]);
 
@@ -123,11 +123,11 @@ export const adminDeleteBook = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-export const adminBanIp = createServerFn({ method: "POST" })
+export const adminBanEmail = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z
       .object({
-        ip: z.string().trim().min(3).max(45),
+        email: z.string().trim().email().max(255),
         reason: z.string().trim().max(200).optional(),
       })
       .parse(data),
@@ -136,19 +136,38 @@ export const adminBanIp = createServerFn({ method: "POST" })
     const { requireAdmin } = await import("@/lib/admin.server");
     await requireAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const email = data.email.toLowerCase();
+    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    const target = (userList?.users ?? []).find((u) => (u.email ?? "").toLowerCase() === email);
+
     const { error } = await supabaseAdmin
-      .from("ip_bans")
-      .upsert({ ip: data.ip, reason: data.reason ?? null }, { onConflict: "ip" });
-    if (error) throw new Error("Bannissement impossible");
-    return { ok: true as const };
+      .from("banned_emails")
+      .insert({ email, user_id: target?.id ?? null, reason: data.reason ?? null });
+    if (error && error.code !== "23505") throw new Error("Bannissement impossible");
+
+    if (target) {
+      // Révoque immédiatement toutes les sessions (téléphone, PC, tout réseau).
+      await supabaseAdmin.auth.admin.updateUserById(target.id, { ban_duration: "876000h" });
+      await supabaseAdmin.auth.admin.signOut(target.id, "global").catch(() => {});
+    }
+    return { ok: true as const, found: !!target };
   });
 
-export const adminUnbanIp = createServerFn({ method: "POST" })
+export const adminUnbanEmail = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
     const { requireAdmin } = await import("@/lib/admin.server");
     await requireAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("ip_bans").delete().eq("id", data.id);
+    const { data: row } = await supabaseAdmin
+      .from("banned_emails")
+      .select("user_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (row?.user_id) {
+      await supabaseAdmin.auth.admin.updateUserById(row.user_id, { ban_duration: "none" });
+    }
+    await supabaseAdmin.from("banned_emails").delete().eq("id", data.id);
     return { ok: true as const };
   });

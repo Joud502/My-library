@@ -9,8 +9,8 @@ import {
   adminLogout,
   adminOverview,
   adminDeleteBook,
-  adminBanIp,
-  adminUnbanIp,
+  adminBanEmail,
+  adminUnbanEmail,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,12 +196,12 @@ function Dashboard({
   onLogout: () => void;
 }) {
   const deleteBook = useServerFn(adminDeleteBook);
-  const banIp = useServerFn(adminBanIp);
-  const unbanIp = useServerFn(adminUnbanIp);
+  const banEmail = useServerFn(adminBanEmail);
+  const unbanEmail = useServerFn(adminUnbanEmail);
 
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ip, setIp] = useState("");
+  const [email, setEmail] = useState("");
   const [reason, setReason] = useState("");
 
   async function load() {
@@ -247,7 +247,7 @@ function Dashboard({
               ["Utilisateurs", data.users.length],
               ["Livres", data.books.length],
               ["Séries", data.series.length],
-              ["IP bannies", data.bans.length],
+              ["Comptes bannis", data.bans.length],
             ].map(([label, value]) => (
               <div key={label as string} className="rounded-xl bg-card p-4 shadow-card">
                 <p className="text-xs text-muted-foreground">{label}</p>
@@ -342,13 +342,17 @@ function Dashboard({
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-medium">Bannissement d'IP</h2>
+            <h2 className="text-lg font-medium">Bannissement par e-mail</h2>
+            <p className="text-xs text-muted-foreground">
+              Le compte est bloqué et ses sessions révoquées sur tous ses appareils et réseaux.
+            </p>
             <div className="flex flex-wrap gap-2">
               <Input
-                className="max-w-[200px]"
-                placeholder="Adresse IP"
-                value={ip}
-                onChange={(e) => setIp(e.target.value)}
+                className="max-w-[240px]"
+                type="email"
+                placeholder="Adresse e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
               <Input
                 className="max-w-[260px]"
@@ -358,12 +362,22 @@ function Dashboard({
               />
               <Button
                 onClick={async () => {
-                  if (!ip.trim()) return;
-                  await banIp({ data: { ip: ip.trim(), reason: reason.trim() || undefined } });
-                  setIp("");
-                  setReason("");
-                  toast.success("IP bannie");
-                  load();
+                  if (!email.trim()) return;
+                  try {
+                    const res = await banEmail({
+                      data: { email: email.trim(), reason: reason.trim() || undefined },
+                    });
+                    setEmail("");
+                    setReason("");
+                    toast.success(
+                      res.found
+                        ? "Compte banni et déconnecté partout"
+                        : "E-mail ajouté à la liste noire",
+                    );
+                    load();
+                  } catch {
+                    toast.error("Bannissement impossible");
+                  }
                 }}
               >
                 <Ban className="mr-2 h-4 w-4" />
@@ -377,7 +391,7 @@ function Dashboard({
                   className="flex items-center justify-between rounded-lg bg-card p-3 text-sm shadow-card"
                 >
                   <span>
-                    <strong>{b.ip}</strong>
+                    <strong>{b.email}</strong>
                     {b.reason ? (
                       <span className="text-muted-foreground"> — {b.reason}</span>
                     ) : null}
@@ -386,8 +400,8 @@ function Dashboard({
                     variant="ghost"
                     size="sm"
                     onClick={async () => {
-                      await unbanIp({ data: { id: b.id } });
-                      toast.success("IP débloquée");
+                      await unbanEmail({ data: { id: b.id } });
+                      toast.success("Compte débloqué");
                       load();
                     }}
                   >
