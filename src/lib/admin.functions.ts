@@ -1,26 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const RECENT_BOOKS = 12;
-
-/** Signe les couvertures d'une liste de livres pour l'affichage admin. */
-async function signCovers(
-  books: { id: string; cover_url: string | null }[],
-): Promise<Record<string, string>> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const covers: Record<string, string> = {};
-  for (const b of books) {
-    if (!b.cover_url) continue;
-    if (b.cover_url.startsWith("http")) {
-      covers[b.id] = b.cover_url;
-      continue;
-    }
-    const { data } = await supabaseAdmin.storage.from("covers").createSignedUrl(b.cover_url, 3600);
-    if (data?.signedUrl) covers[b.id] = data.signedUrl;
-  }
-  return covers;
-}
-
 export const adminStatus = createServerFn({ method: "GET" }).handler(async () => {
   const { isAdminSession, getClientIp, getLockRemainingSeconds, isIpBanned } = await import(
     "@/lib/admin.server"
@@ -101,7 +81,7 @@ export const adminOverview = createServerFn({ method: "GET" }).handler(async () 
         .from("books")
         .select("id, user_id, title, author, cover_url, genre, status, notes, created_at")
         .order("created_at", { ascending: false })
-        .limit(RECENT_BOOKS),
+        .limit(12),
       supabaseAdmin.from("books").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("series").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("profiles").select("id, display_name, created_at"),
@@ -120,6 +100,7 @@ export const adminOverview = createServerFn({ method: "GET" }).handler(async () 
     display_name: profiles?.find((p) => p.id === u.id)?.display_name ?? null,
   }));
 
+  const { signCovers } = await import("@/lib/admin.server");
   const covers = await signCovers(books ?? []);
 
   return {
@@ -211,7 +192,7 @@ export const adminSearchBooks = createServerFn({ method: "POST" })
     z.object({ email: z.string().trim().min(1).max(255) }).parse(data),
   )
   .handler(async ({ data }) => {
-    const { requireAdmin, logAdmin } = await import("@/lib/admin.server");
+    const { requireAdmin, logAdmin, signCovers } = await import("@/lib/admin.server");
     await requireAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

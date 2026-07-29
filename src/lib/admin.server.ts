@@ -114,3 +114,21 @@ export async function logAdmin(
     // Le journal ne doit jamais casser une action admin.
   }
 }
+
+/** Signe les couvertures d'une liste de livres pour l'affichage admin. */
+export async function signCovers(
+  books: { id: string; cover_url: string | null }[],
+): Promise<Record<string, string>> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const covers: Record<string, string> = {};
+  for (const b of books) {
+    if (!b.cover_url) continue;
+    if (b.cover_url.startsWith("http")) {
+      covers[b.id] = b.cover_url;
+      continue;
+    }
+    const { data } = await supabaseAdmin.storage.from("covers").createSignedUrl(b.cover_url, 3600);
+    if (data?.signedUrl) covers[b.id] = data.signedUrl;
+  }
+  return covers;
+}
