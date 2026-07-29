@@ -95,3 +95,40 @@ export async function clearFailures(ip: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   await supabaseAdmin.from("admin_login_attempts").delete().eq("ip", ip);
 }
+
+/** Journal d'activité admin (table deny-all, écrite uniquement côté serveur). */
+export async function logAdmin(
+  action: string,
+  fields: { detail?: string; targetEmail?: string; targetId?: string } = {},
+): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("admin_logs").insert({
+      action: action.slice(0, 80),
+      detail: fields.detail?.slice(0, 300) ?? null,
+      target_email: fields.targetEmail?.slice(0, 255) ?? null,
+      target_id: fields.targetId?.slice(0, 100) ?? null,
+      ip: getClientIp(),
+    });
+  } catch {
+    // Le journal ne doit jamais casser une action admin.
+  }
+}
+
+/** Signe les couvertures d'une liste de livres pour l'affichage admin. */
+export async function signCovers(
+  books: { id: string; cover_url: string | null }[],
+): Promise<Record<string, string>> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const covers: Record<string, string> = {};
+  for (const b of books) {
+    if (!b.cover_url) continue;
+    if (b.cover_url.startsWith("http")) {
+      covers[b.id] = b.cover_url;
+      continue;
+    }
+    const { data } = await supabaseAdmin.storage.from("covers").createSignedUrl(b.cover_url, 3600);
+    if (data?.signedUrl) covers[b.id] = data.signedUrl;
+  }
+  return covers;
+}

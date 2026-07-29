@@ -24,20 +24,36 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    next:
+      typeof search.next === "string" && search.next.startsWith("/") && !search.next.startsWith("//")
+        ? search.next
+        : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+
+  function goAfterAuth() {
+    if (next) {
+      window.location.href = next;
+      return;
+    }
+    navigate({ to: "/mon-album", replace: true });
+  }
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/mon-album", replace: true });
+      if (data.session) goAfterAuth();
     });
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,19 +65,21 @@ function LoginPage() {
       return;
     }
     toast.success("Bon retour parmi vos livres !");
-    navigate({ to: "/mon-album", replace: true });
+    goAfterAuth();
   }
 
   async function handleGoogle() {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: next
+        ? `${window.location.origin}/?next=${encodeURIComponent(next)}`
+        : window.location.origin,
     });
     if (result.error) {
       toast.error("Connexion Google impossible");
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/mon-album", replace: true });
+    goAfterAuth();
   }
 
   return (
