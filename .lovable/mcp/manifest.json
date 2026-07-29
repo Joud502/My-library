@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "sdk_version": "0.25.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://romxcxyepltghhdvweap.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "mon-album-mcp",
+      "version": "0.1.0",
+      "title": "Mon Album"
+    },
+    "tools": [
+      {
+        "name": "list_books",
+        "title": "Lister les livres",
+        "description": "Liste les livres de la bibliothèque de l'utilisateur connecté, avec filtres optionnels.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "a_lire",
+                "en_cours",
+                "lu"
+              ],
+              "description": "Filtrer par statut de lecture."
+            },
+            "search": {
+              "type": "string",
+              "description": "Recherche sur le titre ou l'auteur."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Nombre maximum de livres retournés (défaut 50)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_book",
+        "title": "Ajouter un livre",
+        "description": "Ajoute un livre à la bibliothèque de l'utilisateur connecté.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Titre du livre."
+            },
+            "author": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Auteur du livre."
+            },
+            "genre": {
+              "type": "string",
+              "description": "Genre littéraire."
+            },
+            "published_year": {
+              "type": "integer",
+              "description": "Année de publication."
+            },
+            "pages": {
+              "type": "integer",
+              "description": "Nombre de pages."
+            },
+            "rating": {
+              "type": "integer",
+              "description": "Note de 1 à 5."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "a_lire",
+                "en_cours",
+                "lu"
+              ],
+              "description": "Statut de lecture (défaut : a_lire)."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Notes personnelles."
+            },
+            "series_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifiant d'une série existante."
+            }
+          },
+          "required": [
+            "title",
+            "author"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_book",
+        "title": "Mettre à jour un livre",
+        "description": "Met à jour les informations d'un livre (statut, note, genre, notes...).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifiant du livre à modifier."
+            },
+            "title": {
+              "type": "string"
+            },
+            "author": {
+              "type": "string"
+            },
+            "genre": {
+              "type": "string"
+            },
+            "published_year": {
+              "type": "integer"
+            },
+            "pages": {
+              "type": "integer"
+            },
+            "rating": {
+              "type": "integer",
+              "description": "Note de 1 à 5."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "a_lire",
+                "en_cours",
+                "lu"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            },
+            "series_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_book",
+        "title": "Supprimer un livre",
+        "description": "Supprime définitivement un livre de la bibliothèque de l'utilisateur connecté.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifiant du livre à supprimer."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_series",
+        "title": "Lister les séries",
+        "description": "Liste les séries créées par l'utilisateur connecté.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_series",
+        "title": "Ajouter une série",
+        "description": "Crée une nouvelle série pour regrouper des livres.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Nom de la série."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description de la série."
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
