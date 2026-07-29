@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_logs: {
+        Row: {
+          action: string
+          created_at: string
+          detail: string | null
+          id: string
+          ip: string | null
+          target_email: string | null
+          target_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ip?: string | null
+          target_email?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ip?: string | null
+          target_email?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       banned_emails: {
         Row: {
           created_at: string
