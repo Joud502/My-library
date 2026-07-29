@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, ShieldAlert, Trash2, Ban, LogOut, RefreshCw } from "lucide-react";
+import { Loader2, ShieldAlert, Trash2, Ban, LogOut, RefreshCw, Search, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import {
   adminStatus,
@@ -11,6 +11,8 @@ import {
   adminDeleteBook,
   adminBanEmail,
   adminUnbanEmail,
+  adminSearchBooks,
+  adminLogs,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,8 @@ export const Route = createFileRoute("/qureti")({
 });
 
 type Overview = Awaited<ReturnType<typeof adminOverview>>;
+type SearchResult = Awaited<ReturnType<typeof adminSearchBooks>>;
+type LogRow = Awaited<ReturnType<typeof adminLogs>>["logs"][number];
 
 function AdminPage() {
   const status = useServerFn(adminStatus);
@@ -198,11 +202,45 @@ function Dashboard({
   const deleteBook = useServerFn(adminDeleteBook);
   const banEmail = useServerFn(adminBanEmail);
   const unbanEmail = useServerFn(adminUnbanEmail);
+  const searchBooks = useServerFn(adminSearchBooks);
+  const fetchLogs = useServerFn(adminLogs);
 
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [reason, setReason] = useState("");
+  const [searchEmail, setSearchEmail] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [result, setResult] = useState<SearchResult | null>(null);
+  const [logs, setLogs] = useState<LogRow[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  async function loadLogs() {
+    setLogsLoading(true);
+    try {
+      const res = await fetchLogs({ data: { limit: 100 } });
+      setLogs(res.logs);
+    } catch {
+      toast.error("Journal indisponible");
+    } finally {
+      setLogsLoading(false);
+    }
+  }
+
+  async function runSearch() {
+    const value = searchEmail.trim();
+    if (!value) return;
+    setSearching(true);
+    try {
+      const res = await searchBooks({ data: { email: value } });
+      setResult(res);
+      if (!res.found) toast.info("Aucun utilisateur avec cet e-mail");
+    } catch {
+      toast.error("Recherche impossible");
+    } finally {
+      setSearching(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -217,6 +255,7 @@ function Dashboard({
 
   useEffect(() => {
     load();
+    loadLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -245,8 +284,8 @@ function Dashboard({
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
               ["Utilisateurs", data.users.length],
-              ["Livres", data.books.length],
-              ["Séries", data.series.length],
+              ["Livres", data.bookCount],
+              ["Séries", data.serieCount],
               ["Comptes bannis", data.bans.length],
             ].map(([label, value]) => (
               <div key={label as string} className="rounded-xl bg-card p-4 shadow-card">
@@ -257,7 +296,49 @@ function Dashboard({
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-medium">Livres</h2>
+            <h2 className="text-lg font-medium">Rechercher les livres d'un utilisateur</h2>
+            <div className="flex flex-wrap gap-2">
+              <Input
+                className="max-w-[280px]"
+                type="email"
+                placeholder="Adresse e-mail de l'utilisateur"
+                value={searchEmail}
+                onChange={(e) => setSearchEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") runSearch();
+                }}
+              />
+              <Button onClick={runSearch} disabled={searching}>
+                {searching ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="mr-2 h-4 w-4" />
+                )}
+                Rechercher
+              </Button>
+              {result ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setResult(null);
+                    setSearchEmail("");
+                  }}
+                >
+                  Effacer
+                </Button>
+              ) : null}
+            </div>
+            {result?.found ? (
+              <p className="text-xs text-muted-foreground">
+                {result.books.length} livre(s) pour <strong>{result.email}</strong>
+              </p>
+            ) : null}
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-medium">
+              {result?.found ? `Livres de ${result.email}` : "Derniers livres ajoutés"}
+            </h2>
             <div className="overflow-x-auto rounded-xl bg-card shadow-card">
               <table className="w-full text-sm">
                 <thead className="text-left text-xs text-muted-foreground">
@@ -270,12 +351,12 @@ function Dashboard({
                   </tr>
                 </thead>
                 <tbody>
-                  {data.books.map((b) => (
+                  {(result?.found ? result.books : data.books).map((b) => (
                     <tr key={b.id} className="border-t border-border">
                       <td className="p-3">
-                        {data.covers[b.id] ? (
+                        {(result?.found ? result.covers : data.covers)[b.id] ? (
                           <img
-                            src={data.covers[b.id]}
+                            src={(result?.found ? result.covers : data.covers)[b.id]}
                             alt={`Couverture de ${b.title}`}
                             className="h-14 w-10 rounded object-cover"
                             loading="lazy"
@@ -297,6 +378,8 @@ function Dashboard({
                             await deleteBook({ data: { id: b.id } });
                             toast.success("Livre supprimé");
                             load();
+                            loadLogs();
+                            if (result?.found) runSearch();
                           }}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -375,6 +458,7 @@ function Dashboard({
                         : "E-mail ajouté à la liste noire",
                     );
                     load();
+                    loadLogs();
                   } catch {
                     toast.error("Bannissement impossible");
                   }
@@ -403,6 +487,7 @@ function Dashboard({
                       await unbanEmail({ data: { id: b.id } });
                       toast.success("Compte débloqué");
                       load();
+                      loadLogs();
                     }}
                   >
                     Débloquer
@@ -410,6 +495,55 @@ function Dashboard({
                 </li>
               ))}
             </ul>
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="flex items-center gap-2 text-lg font-medium">
+                <ScrollText className="h-5 w-5" />
+                Journal d'activité
+              </h2>
+              <Button variant="outline" size="sm" onClick={loadLogs} disabled={logsLoading}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Actualiser
+              </Button>
+            </div>
+            <div className="overflow-x-auto rounded-xl bg-card shadow-card">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Action</th>
+                    <th className="p-3">Détail</th>
+                    <th className="p-3">Cible</th>
+                    <th className="p-3">Origine</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.length === 0 ? (
+                    <tr>
+                      <td className="p-3 text-muted-foreground" colSpan={5}>
+                        {logsLoading ? "Chargement…" : "Aucun événement enregistré."}
+                      </td>
+                    </tr>
+                  ) : (
+                    logs.map((l) => (
+                      <tr key={l.id} className="border-t border-border">
+                        <td className="p-3 whitespace-nowrap text-xs text-muted-foreground">
+                          {new Date(l.created_at).toLocaleString("fr-FR")}
+                        </td>
+                        <td className="p-3 font-medium">{l.action}</td>
+                        <td className="p-3">{l.detail ?? "—"}</td>
+                        <td className="p-3 text-xs text-muted-foreground">
+                          {l.target_email ?? l.target_id ?? "—"}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground">{l.ip ?? "—"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       )}
