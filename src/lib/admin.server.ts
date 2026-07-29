@@ -95,3 +95,22 @@ export async function clearFailures(ip: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   await supabaseAdmin.from("admin_login_attempts").delete().eq("ip", ip);
 }
+
+/** Journal d'activité admin (table deny-all, écrite uniquement côté serveur). */
+export async function logAdmin(
+  action: string,
+  fields: { detail?: string; targetEmail?: string; targetId?: string } = {},
+): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("admin_logs").insert({
+      action: action.slice(0, 80),
+      detail: fields.detail?.slice(0, 300) ?? null,
+      target_email: fields.targetEmail?.slice(0, 255) ?? null,
+      target_id: fields.targetId?.slice(0, 100) ?? null,
+      ip: getClientIp(),
+    });
+  } catch {
+    // Le journal ne doit jamais casser une action admin.
+  }
+}
