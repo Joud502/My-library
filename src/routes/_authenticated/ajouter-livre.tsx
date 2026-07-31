@@ -152,6 +152,66 @@ function AjouterLivre() {
         Le titre et l'auteur suffisent, le reste est optionnel.
       </p>
 
+      <div className="mt-6 space-y-3 rounded-xl bg-card p-6 shadow-card">
+        <Label htmlFor="lookup">Remplissage automatique</Label>
+        <p className="text-sm text-muted-foreground">
+          Entrez le nom d'un livre : auteur, année, pages, genre et couverture seront récupérés.
+        </p>
+        <div className="flex gap-2">
+          <Input
+            id="lookup"
+            placeholder="Ex. : Harry Potter à l'école des sorciers"
+            value={lookup}
+            onChange={(e) => setLookup(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleLookup();
+              }
+            }}
+          />
+          <Button type="button" onClick={handleLookup} disabled={searching}>
+            {searching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+            <span className="ml-2 hidden sm:inline">Rechercher</span>
+          </Button>
+        </div>
+
+        {results.length > 0 && (
+          <ul className="divide-y rounded-lg border">
+            {results.map((s) => (
+              <li key={s.key}>
+                <button
+                  type="button"
+                  onClick={() => applySuggestion(s)}
+                  className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted"
+                >
+                  {s.coverUrl ? (
+                    <img
+                      src={s.coverUrl}
+                      alt={`Couverture de ${s.title}`}
+                      loading="lazy"
+                      className="h-16 w-11 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="h-16 w-11 rounded bg-muted" />
+                  )}
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{s.title}</span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {[s.author, s.year].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit} className="mt-6 space-y-5 rounded-xl bg-card p-6 shadow-card">
         <div className="space-y-2">
           <Label htmlFor="title">Titre *</Label>
@@ -175,13 +235,30 @@ function AjouterLivre() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="cover">Image de couverture</Label>
+          {coverUrl && !file && (
+            <div className="flex items-center gap-3">
+              <img
+                src={coverUrl}
+                alt="Couverture récupérée automatiquement"
+                className="h-24 w-16 rounded object-cover"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => setCoverUrl(null)}>
+                Retirer
+              </Button>
+            </div>
+          )}
           <Input
             id="cover"
             type="file"
             accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setFile(f);
+              if (f) setCoverUrl(null);
+            }}
           />
         </div>
+
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
