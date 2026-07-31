@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, ShieldAlert, Trash2, Ban, LogOut, RefreshCw, Search, ScrollText } from "lucide-react";
+import {
+  Loader2,
+  ShieldAlert,
+  Trash2,
+  Ban,
+  LogOut,
+  RefreshCw,
+  Search,
+  ScrollText,
+  Download,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   adminStatus,
@@ -32,6 +42,42 @@ export const Route = createFileRoute("/qureti")({
 type Overview = Awaited<ReturnType<typeof adminOverview>>;
 type SearchResult = Awaited<ReturnType<typeof adminSearchBooks>>;
 type LogRow = Awaited<ReturnType<typeof adminLogs>>["logs"][number];
+type BookRow = Overview["books"][number];
+
+function csvCell(value: unknown) {
+  const s = value === null || value === undefined ? "" : String(value);
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function downloadBooksCsv(books: BookRow[], emailByUser: Map<string, string>, filename: string) {
+  const headers = ["id", "titre", "auteur", "genre", "statut", "notes", "proprietaire", "cree_le"];
+  const lines = [
+    headers.join(","),
+    ...books.map((b) =>
+      [
+        b.id,
+        b.title,
+        b.author,
+        b.genre,
+        b.status,
+        b.notes,
+        emailByUser.get(b.user_id) ?? b.user_id,
+        b.created_at,
+      ]
+        .map(csvCell)
+        .join(","),
+    ),
+  ];
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
 
 function AdminPage() {
   const status = useServerFn(adminStatus);
@@ -336,9 +382,28 @@ function Dashboard({
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-medium">
-              {result?.found ? `Livres de ${result.email}` : "Derniers livres ajoutés"}
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-medium">
+                {result?.found ? `Livres de ${result.email}` : "Derniers livres ajoutés"}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={(result?.found ? result.books : data.books).length === 0}
+                onClick={() => {
+                  const books = result?.found ? result.books : data.books;
+                  const suffix = result?.found
+                    ? result.email.replace(/[^a-z0-9]+/gi, "-")
+                    : "recents";
+                  downloadBooksCsv(books, emailByUser, `livres-${suffix}.csv`);
+                  toast.success(`${books.length} livre(s) exporté(s)`);
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Exporter CSV
+              </Button>
+            </div>
+
             <div className="overflow-x-auto rounded-xl bg-card shadow-card">
               <table className="w-full text-sm">
                 <thead className="text-left text-xs text-muted-foreground">
