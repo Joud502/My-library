@@ -32,18 +32,35 @@ const schema = z.object({
   displayName: z.string().trim().min(1, "Indiquez un nom").max(80),
   email: z.string().trim().email("Adresse e-mail invalide").max(255),
   password: z.string().min(6, "6 caractères minimum").max(72),
+  birthDate: z
+    .string()
+    .min(1, "Indiquez votre date de naissance")
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), "Date de naissance invalide")
+    .refine((v) => ageFrom(v) >= 13, "Vous devez avoir au moins 13 ans pour créer un compte")
+    .refine((v) => ageFrom(v) < 120, "Date de naissance invalide"),
 });
+
+/** Âge en années révolues à partir d'une date ISO. */
+function ageFrom(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
 
 function SignupPage() {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = schema.safeParse({ displayName, email, password });
+    const parsed = schema.safeParse({ displayName, email, password, birthDate });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
@@ -54,7 +71,10 @@ function SignupPage() {
       password: parsed.data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/confirmation`,
-        data: { display_name: parsed.data.displayName },
+        data: {
+          display_name: parsed.data.displayName,
+          birth_date: parsed.data.birthDate,
+        },
       },
     });
     setLoading(false);
@@ -124,6 +144,20 @@ function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="birthDate">Date de naissance</Label>
+            <Input
+              id="birthDate"
+              type="date"
+              required
+              max={new Date().toISOString().slice(0, 10)}
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Les couvertures gore ou violentes sont réservées aux membres de 18 ans et plus.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Mot de passe</Label>
