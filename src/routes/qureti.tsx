@@ -42,6 +42,42 @@ export const Route = createFileRoute("/qureti")({
 type Overview = Awaited<ReturnType<typeof adminOverview>>;
 type SearchResult = Awaited<ReturnType<typeof adminSearchBooks>>;
 type LogRow = Awaited<ReturnType<typeof adminLogs>>["logs"][number];
+type BookRow = Overview["books"][number];
+
+function csvCell(value: unknown) {
+  const s = value === null || value === undefined ? "" : String(value);
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function downloadBooksCsv(books: BookRow[], emailByUser: Map<string, string>, filename: string) {
+  const headers = ["id", "titre", "auteur", "genre", "statut", "notes", "proprietaire", "cree_le"];
+  const lines = [
+    headers.join(","),
+    ...books.map((b) =>
+      [
+        b.id,
+        b.title,
+        b.author,
+        b.genre,
+        b.status,
+        b.notes,
+        emailByUser.get(b.user_id) ?? b.user_id,
+        b.created_at,
+      ]
+        .map(csvCell)
+        .join(","),
+    ),
+  ];
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
 
 function AdminPage() {
   const status = useServerFn(adminStatus);
