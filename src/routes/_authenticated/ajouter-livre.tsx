@@ -63,6 +63,45 @@ function AjouterLivre() {
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [lookup, setLookup] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<BookSuggestion[]>([]);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+  async function handleLookup() {
+    const q = lookup.trim();
+    if (!q) {
+      toast.error("Entrez le nom d'un livre");
+      return;
+    }
+    setSearching(true);
+    try {
+      const found = await searchBooks(q);
+      setResults(found);
+      if (found.length === 0) toast.error("Aucun livre trouvé pour ce titre");
+      else if (found.length === 1) applySuggestion(found[0]);
+    } catch (err) {
+      toast.error("Recherche impossible", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function applySuggestion(s: BookSuggestion) {
+    setTitle(s.title);
+    if (s.author) setAuthor(s.author);
+    if (s.genre) setGenre(s.genre);
+    if (s.year) setYear(String(s.year));
+    if (s.pages) setPages(String(s.pages));
+    setCoverUrl(s.coverUrl);
+    setFile(null);
+    setResults([]);
+    toast.success("Informations remplies automatiquement");
+  }
+
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = schema.safeParse({ title, author, genre, notes });
