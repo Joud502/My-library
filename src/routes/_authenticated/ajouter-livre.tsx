@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchSeries, uploadCover } from "@/lib/library";
+import { searchBooks, type BookSuggestion } from "@/lib/book-lookup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 
 export const Route = createFileRoute("/_authenticated/ajouter-livre")({
   head: () => ({
@@ -61,6 +63,45 @@ function AjouterLivre() {
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [lookup, setLookup] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<BookSuggestion[]>([]);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+  async function handleLookup() {
+    const q = lookup.trim();
+    if (!q) {
+      toast.error("Entrez le nom d'un livre");
+      return;
+    }
+    setSearching(true);
+    try {
+      const found = await searchBooks(q);
+      setResults(found);
+      if (found.length === 0) toast.error("Aucun livre trouvé pour ce titre");
+      else if (found.length === 1) applySuggestion(found[0]);
+    } catch (err) {
+      toast.error("Recherche impossible", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function applySuggestion(s: BookSuggestion) {
+    setTitle(s.title);
+    if (s.author) setAuthor(s.author);
+    if (s.genre) setGenre(s.genre);
+    if (s.year) setYear(String(s.year));
+    if (s.pages) setPages(String(s.pages));
+    setCoverUrl(s.coverUrl);
+    setFile(null);
+    setResults([]);
+    toast.success("Informations remplies automatiquement");
+  }
+
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = schema.safeParse({ title, author, genre, notes });
@@ -88,7 +129,7 @@ function AjouterLivre() {
         status,
         notes: parsed.data.notes || null,
         series_id: serieId === "aucune" ? null : serieId,
-        cover_url: coverPath,
+        cover_url: coverPath ?? coverUrl,
       });
       if (error) throw error;
 
@@ -110,6 +151,66 @@ function AjouterLivre() {
       <p className="mt-1 text-sm text-muted-foreground">
         Le titre et l'auteur suffisent, le reste est optionnel.
       </p>
+
+      <div className="mt-6 space-y-3 rounded-xl bg-card p-6 shadow-card">
+        <Label htmlFor="lookup">Remplissage automatique</Label>
+        <p className="text-sm text-muted-foreground">
+          Entrez le nom d'un livre : auteur, année, pages, genre et couverture seront récupérés.
+        </p>
+        <div className="flex gap-2">
+          <Input
+            id="lookup"
+            placeholder="Ex. : Harry Potter à l'école des sorciers"
+            value={lookup}
+            onChange={(e) => setLookup(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleLookup();
+              }
+            }}
+          />
+          <Button type="button" onClick={handleLookup} disabled={searching}>
+            {searching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+            <span className="ml-2 hidden sm:inline">Rechercher</span>
+          </Button>
+        </div>
+
+        {results.length > 0 && (
+          <ul className="divide-y rounded-lg border">
+            {results.map((s) => (
+              <li key={s.key}>
+                <button
+                  type="button"
+                  onClick={() => applySuggestion(s)}
+                  className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted"
+                >
+                  {s.coverUrl ? (
+                    <img
+                      src={s.coverUrl}
+                      alt={`Couverture de ${s.title}`}
+                      loading="lazy"
+                      className="h-16 w-11 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="h-16 w-11 rounded bg-muted" />
+                  )}
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{s.title}</span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {[s.author, s.year].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5 rounded-xl bg-card p-6 shadow-card">
         <div className="space-y-2">
@@ -134,13 +235,30 @@ function AjouterLivre() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="cover">Image de couverture</Label>
+          {coverUrl && !file && (
+            <div className="flex items-center gap-3">
+              <img
+                src={coverUrl}
+                alt="Couverture récupérée automatiquement"
+                className="h-24 w-16 rounded object-cover"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => setCoverUrl(null)}>
+                Retirer
+              </Button>
+            </div>
+          )}
           <Input
             id="cover"
             type="file"
             accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setFile(f);
+              if (f) setCoverUrl(null);
+            }}
           />
         </div>
+
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
