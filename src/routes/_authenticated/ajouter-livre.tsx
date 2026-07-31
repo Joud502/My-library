@@ -129,7 +129,7 @@ function AjouterLivre() {
         status,
         notes: parsed.data.notes || null,
         series_id: serieId === "aucune" ? null : serieId,
-        cover_url: coverPath,
+        cover_url: coverPath ?? coverUrl,
       });
       if (error) throw error;
 
