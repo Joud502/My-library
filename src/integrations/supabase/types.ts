@@ -98,6 +98,7 @@ export type Database = {
       books: {
         Row: {
           author: string
+          cover_blocked: boolean
           cover_url: string | null
           created_at: string
           genre: string | null
@@ -113,6 +114,7 @@ export type Database = {
         }
         Insert: {
           author: string
+          cover_blocked?: boolean
           cover_url?: string | null
           created_at?: string
           genre?: string | null
@@ -128,6 +130,7 @@ export type Database = {
         }
         Update: {
           author?: string
+          cover_blocked?: boolean
           cover_url?: string | null
           created_at?: string
           genre?: string | null
@@ -177,16 +180,19 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birth_date: string | null
           created_at: string
           display_name: string | null
           id: string
         }
         Insert: {
+          birth_date?: string | null
           created_at?: string
           display_name?: string | null
           id: string
         }
         Update: {
+          birth_date?: string | null
           created_at?: string
           display_name?: string | null
           id?: string

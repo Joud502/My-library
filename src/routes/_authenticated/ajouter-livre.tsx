@@ -1,12 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchSeries, uploadCover } from "@/lib/library";
+import { moderateBook } from "@/lib/moderation.functions";
 import { searchBooks, type BookSuggestion } from "@/lib/book-lookup";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +53,8 @@ function AjouterLivre() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const seriesQuery = useQuery({ queryKey: ["series"], queryFn: fetchSeries });
+  const moderate = useServerFn(moderateBook);
+
 
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -102,6 +107,15 @@ function AjouterLivre() {
   }
 
 
+  function fileToDataUrl(f: File) {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Lecture de l'image impossible"));
+      reader.readAsDataURL(f);
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = schema.safeParse({ title, author, genre, notes });
@@ -115,8 +129,22 @@ function AjouterLivre() {
       const userId = userData.user?.id;
       if (!userId) throw new Error("Session expirée");
 
+      // Vérification du titre et modération de l'image (NSFW / gore / pertinence).
+      const image = file ? await fileToDataUrl(file) : (coverUrl ?? undefined);
+      const verdict = await moderate({
+        data: { title: parsed.data.title, author: parsed.data.author, image },
+      });
+
+      if (!verdict.title.ok) {
+        toast.error("Titre refusé", { description: verdict.title.reason ?? undefined });
+        setSaving(false);
+        return;
+      }
+
+      const coverRejected = verdict.cover ? !verdict.cover.allowed : false;
+
       let coverPath: string | null = null;
-      if (file) coverPath = await uploadCover(file);
+      if (file && !coverRejected) coverPath = await uploadCover(file);
 
       const { error } = await supabase.from("books").insert({
         user_id: userId,
@@ -129,12 +157,23 @@ function AjouterLivre() {
         status,
         notes: parsed.data.notes || null,
         series_id: serieId === "aucune" ? null : serieId,
-        cover_url: coverPath ?? coverUrl,
+        cover_url: coverRejected ? null : (coverPath ?? coverUrl),
+        cover_blocked: coverRejected,
       });
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ["books"] });
-      toast.success("Livre ajouté à votre album");
+      if (coverRejected) {
+        toast.warning("Livre ajouté sans couverture", {
+          description: verdict.cover?.reason ?? "Image refusée par la modération.",
+        });
+      } else if (!verdict.title.realBook) {
+        toast.success("Livre ajouté", {
+          description: "Ce titre n'a pas été trouvé dans les catalogues publics.",
+        });
+      } else {
+        toast.success("Livre ajouté à votre album");
+      }
       navigate({ to: "/mon-album" });
     } catch (err) {
       toast.error("Ajout impossible", {
@@ -144,6 +183,7 @@ function AjouterLivre() {
       setSaving(false);
     }
   }
+
 
   return (
     <div className="mx-auto max-w-2xl">
