@@ -382,9 +382,28 @@ function Dashboard({
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-medium">
-              {result?.found ? `Livres de ${result.email}` : "Derniers livres ajoutés"}
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-medium">
+                {result?.found ? `Livres de ${result.email}` : "Derniers livres ajoutés"}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={(result?.found ? result.books : data.books).length === 0}
+                onClick={() => {
+                  const books = result?.found ? result.books : data.books;
+                  const suffix = result?.found
+                    ? result.email.replace(/[^a-z0-9]+/gi, "-")
+                    : "recents";
+                  downloadBooksCsv(books, emailByUser, `livres-${suffix}.csv`);
+                  toast.success(`${books.length} livre(s) exporté(s)`);
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Exporter CSV
+              </Button>
+            </div>
+
             <div className="overflow-x-auto rounded-xl bg-card shadow-card">
               <table className="w-full text-sm">
                 <thead className="text-left text-xs text-muted-foreground">
