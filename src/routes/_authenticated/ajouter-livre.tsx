@@ -53,6 +53,8 @@ function AjouterLivre() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const seriesQuery = useQuery({ queryKey: ["series"], queryFn: fetchSeries });
+  const moderate = useServerFn(moderateBook);
+
 
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
