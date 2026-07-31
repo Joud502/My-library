@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, ShieldAlert, Trash2, Ban, LogOut, RefreshCw, Search, ScrollText } from "lucide-react";
+import {
+  Loader2,
+  ShieldAlert,
+  Trash2,
+  Ban,
+  LogOut,
+  RefreshCw,
+  Search,
+  ScrollText,
+  Download,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   adminStatus,
