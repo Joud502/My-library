@@ -610,7 +610,10 @@ function Dashboard({
               </table>
             </div>
           </section>
+
+          <AdminTerminal onAfterWrite={() => { load(); loadLogs(); }} />
         </>
+
       )}
     </main>
   );
