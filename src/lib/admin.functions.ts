@@ -260,5 +260,5 @@ export const adminExecSql = createServerFn({ method: "POST" })
     if (error) {
       return { ok: false as const, error: error.message, ms: Date.now() - started };
     }
-    return { ok: true as const, result: result as unknown, ms: Date.now() - started };
+    return { ok: true as const, resultJson: JSON.stringify(result ?? null), ms: Date.now() - started };
   });
