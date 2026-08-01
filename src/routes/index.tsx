@@ -49,9 +49,11 @@ function LoginPage() {
   }
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setRemember(isRemembered());
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) goAfterAuth();
     });
@@ -67,11 +69,13 @@ function LoginPage() {
       toast.error("Connexion impossible", { description: error.message });
       return;
     }
+    setRememberDevice(remember);
     toast.success("Bon retour parmi vos livres !");
     goAfterAuth();
   }
 
   async function handleGoogle() {
+    setRememberDevice(remember);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: next
         ? `${window.location.origin}/?next=${encodeURIComponent(next)}`
@@ -84,6 +88,7 @@ function LoginPage() {
     if (result.redirected) return;
     goAfterAuth();
   }
+
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-surface px-4 py-12">
