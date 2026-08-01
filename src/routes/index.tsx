@@ -128,11 +128,26 @@ function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
+            <Checkbox
+              id="remember"
+              checked={remember}
+              onCheckedChange={(v) => setRemember(v === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="remember" className="cursor-pointer text-sm font-normal leading-snug">
+              Se souvenir de cet appareil
+              <span className="block text-xs text-muted-foreground">
+                Sinon, vous serez déconnecté à la fermeture du navigateur.
+              </span>
+            </Label>
+          </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Se connecter
           </Button>
         </form>
+
 
         <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="h-px flex-1 bg-border" />
