@@ -231,7 +231,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_exec_sql: { Args: { query: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
