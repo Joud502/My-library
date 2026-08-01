@@ -238,3 +238,27 @@ export const adminLogs = createServerFn({ method: "POST" })
       .limit(data.limit ?? 100);
     return { logs: logs ?? [] };
   });
+
+export const adminExecSql = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z.object({ query: z.string().trim().min(1).max(5000) }).parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { requireAdmin, logAdmin } = await import("@/lib/admin.server");
+    await requireAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const started = Date.now();
+    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_exec_sql", {
+      query: data.query,
+    });
+
+    await logAdmin("terminal.sql", {
+      detail: `${data.query.slice(0, 180)}${error ? ` — ERREUR: ${error.message}` : ""}`,
+    });
+
+    if (error) {
+      return { ok: false as const, error: error.message, ms: Date.now() - started };
+    }
+    return { ok: true as const, resultJson: JSON.stringify(result ?? null), ms: Date.now() - started };
+  });

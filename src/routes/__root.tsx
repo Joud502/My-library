@@ -12,6 +12,10 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider, themeInitScript } from "@/lib/theme";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { enforceSessionPolicy } from "@/lib/session-guard";
+
 
 
 function NotFoundComponent() {
@@ -113,9 +117,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
         {children}
@@ -128,12 +133,20 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    enforceSessionPolicy();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <Toaster position="top-center" richColors />
+      <ThemeProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <ThemeToggle className="fixed bottom-4 right-4 z-50" />
+        <Toaster position="top-center" richColors />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
+
 

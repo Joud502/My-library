@@ -11,6 +11,8 @@ import {
   Search,
   ScrollText,
   Download,
+  TerminalSquare,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,6 +25,7 @@ import {
   adminUnbanEmail,
   adminSearchBooks,
   adminLogs,
+  adminExecSql,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -610,8 +613,159 @@ function Dashboard({
               </table>
             </div>
           </section>
+
+          <AdminTerminal onAfterWrite={() => { load(); loadLogs(); }} />
         </>
+
       )}
     </main>
+  );
+}
+
+type TermLine = { kind: "cmd" | "out" | "err" | "info"; text: string };
+
+const HELP = [
+  "Commandes disponibles :",
+  "  help              affiche cette aide",
+  "  tables            liste les tables de la base",
+  "  clear             vide la console",
+  "  <requête SQL>     exécutée sur la base (SELECT, INSERT, UPDATE, DELETE, ALTER…)",
+  "",
+  "Note : les commandes systeme (bash/cmd) ne sont pas executables — le serveur",
+  "tourne dans un environnement isole sans shell. Seul le SQL est disponible.",
+].join("\n");
+
+const SHELLY = /^(ls|cd|cat|rm|sudo|bash|sh|npm|node|curl|wget|ping|ps|kill|chmod|mkdir|git|python|pip|ipconfig|ifconfig|dir)\b/i;
+
+function AdminTerminal({ onAfterWrite }: { onAfterWrite: () => void }) {
+  const exec = useServerFn(adminExecSql);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const [histIndex, setHistIndex] = useState(-1);
+  const [lines, setLines] = useState<TermLine[]>([
+    { kind: "info", text: "Console d'administration. Tapez « help » pour l'aide." },
+  ]);
+
+  function push(...items: TermLine[]) {
+    setLines((prev) => [...prev, ...items]);
+  }
+
+  async function run() {
+    const query = input.trim();
+    if (!query || busy) return;
+    setInput("");
+    setHistory((h) => [query, ...h].slice(0, 50));
+    setHistIndex(-1);
+    push({ kind: "cmd", text: `> ${query}` });
+
+    const lower = query.toLowerCase();
+    if (lower === "help") return push({ kind: "info", text: HELP });
+    if (lower === "clear") return setLines([]);
+    if (SHELLY.test(query))
+      return push({
+        kind: "err",
+        text: "Commande système non disponible : le serveur n'expose aucun shell. Utilisez du SQL.",
+      });
+
+    const sql =
+      lower === "tables"
+        ? "select table_name from information_schema.tables where table_schema='public' order by table_name"
+        : query;
+
+    setBusy(true);
+    try {
+      const res = await exec({ data: { query: sql } });
+      if (!res.ok) {
+        push({ kind: "err", text: res.error });
+        return;
+      }
+      const parsed = JSON.parse(res.resultJson) as
+        | { kind: "rows"; rows: Record<string, unknown>[] }
+        | { kind: "command"; command: string; rows_affected: number }
+        | null;
+      if (parsed && parsed.kind === "rows") {
+        push({
+          kind: "out",
+          text: parsed.rows.length
+            ? JSON.stringify(parsed.rows, null, 2)
+            : "(0 ligne)",
+        });
+        push({ kind: "info", text: `${parsed.rows.length} ligne(s) — ${res.ms} ms` });
+      } else if (parsed && parsed.kind === "command") {
+        push({
+          kind: "info",
+          text: `${parsed.command.toUpperCase()} OK — ${parsed.rows_affected} ligne(s) — ${res.ms} ms`,
+        });
+        onAfterWrite();
+      } else {
+        push({ kind: "info", text: `OK — ${res.ms} ms` });
+      }
+    } catch (e) {
+      push({ kind: "err", text: e instanceof Error ? e.message : "Erreur inconnue" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className="flex items-center gap-2 text-lg font-medium">
+        <TerminalSquare className="h-5 w-5" />
+        Terminal serveur / base de données
+      </h2>
+      <p className="text-xs text-muted-foreground">
+        Chaque commande est enregistrée dans le journal d'activité. Les requêtes destructives
+        sont exécutées immédiatement et sans confirmation.
+      </p>
+      <div className="rounded-xl bg-foreground/95 p-4 font-mono text-xs text-background shadow-card">
+        <div className="max-h-80 space-y-2 overflow-y-auto">
+          {lines.map((l, i) => (
+            <pre
+              key={i}
+              className={
+                "whitespace-pre-wrap break-words " +
+                (l.kind === "err"
+                  ? "text-red-400"
+                  : l.kind === "cmd"
+                    ? "text-emerald-400"
+                    : l.kind === "info"
+                      ? "text-background/60"
+                      : "")
+              }
+            >
+              {l.text}
+            </pre>
+          ))}
+          {busy ? <pre className="text-background/60">Exécution…</pre> : null}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <textarea
+          rows={2}
+          spellCheck={false}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              run();
+            } else if (e.key === "ArrowUp" && !input) {
+              const next = Math.min(histIndex + 1, history.length - 1);
+              if (next >= 0) {
+                setHistIndex(next);
+                setInput(history[next]);
+              }
+            }
+          }}
+          placeholder="select * from books limit 5;"
+          className="flex-1 rounded-lg border border-input bg-background p-3 font-mono text-xs outline-none focus:ring-2 focus:ring-ring"
+        />
+        <Button onClick={run} disabled={busy}>
+          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+          Exécuter
+        </Button>
+      </div>
+    </section>
   );
 }
