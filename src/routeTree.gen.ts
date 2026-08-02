@@ -13,12 +13,14 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as QuretiRouteImport } from './routes/qureti'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedMonAlbumRouteImport } from './routes/_authenticated/mon-album'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedAjouterSerieRouteImport } from './routes/_authenticated/ajouter-serie'
 import { Route as AuthenticatedAjouterLivreRouteImport } from './routes/_authenticated/ajouter-livre'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -44,6 +46,11 @@ const McpRoute = McpRouteImport.update({
 const InscriptionRoute = InscriptionRouteImport.update({
   id: '/inscription',
   path: '/inscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExplorerRoute = ExplorerRouteImport.update({
+  id: '/explorer',
+  path: '/explorer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmationRoute = ConfirmationRouteImport.update({
@@ -73,6 +80,11 @@ const AuthenticatedParametresRoute = AuthenticatedParametresRouteImport.update({
 const AuthenticatedMonAlbumRoute = AuthenticatedMonAlbumRouteImport.update({
   id: '/mon-album',
   path: '/mon-album',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAjouterSerieRoute =
@@ -114,6 +126,7 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/confirmation': typeof ConfirmationRoute
+  '/explorer': typeof ExplorerRoute
   '/inscription': typeof InscriptionRoute
   '/mcp': typeof McpRoute
   '/qureti': typeof QuretiRoute
@@ -122,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/mon-album': typeof AuthenticatedMonAlbumRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/u/$username': typeof UUsernameRoute
@@ -131,6 +145,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/confirmation': typeof ConfirmationRoute
+  '/explorer': typeof ExplorerRoute
   '/inscription': typeof InscriptionRoute
   '/mcp': typeof McpRoute
   '/qureti': typeof QuretiRoute
@@ -139,6 +154,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/mon-album': typeof AuthenticatedMonAlbumRoute
   '/parametres': typeof AuthenticatedParametresRoute
   '/u/$username': typeof UUsernameRoute
@@ -150,6 +166,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/confirmation': typeof ConfirmationRoute
+  '/explorer': typeof ExplorerRoute
   '/inscription': typeof InscriptionRoute
   '/mcp': typeof McpRoute
   '/qureti': typeof QuretiRoute
@@ -158,6 +175,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/_authenticated/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/mon-album': typeof AuthenticatedMonAlbumRoute
   '/_authenticated/parametres': typeof AuthenticatedParametresRoute
   '/u/$username': typeof UUsernameRoute
@@ -169,6 +187,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/confirmation'
+    | '/explorer'
     | '/inscription'
     | '/mcp'
     | '/qureti'
@@ -177,6 +196,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/ajouter-livre'
     | '/ajouter-serie'
+    | '/messages'
     | '/mon-album'
     | '/parametres'
     | '/u/$username'
@@ -186,6 +206,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/confirmation'
+    | '/explorer'
     | '/inscription'
     | '/mcp'
     | '/qureti'
@@ -194,6 +215,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/ajouter-livre'
     | '/ajouter-serie'
+    | '/messages'
     | '/mon-album'
     | '/parametres'
     | '/u/$username'
@@ -204,6 +226,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/confirmation'
+    | '/explorer'
     | '/inscription'
     | '/mcp'
     | '/qureti'
@@ -212,6 +235,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/ajouter-livre'
     | '/_authenticated/ajouter-serie'
+    | '/_authenticated/messages'
     | '/_authenticated/mon-album'
     | '/_authenticated/parametres'
     | '/u/$username'
@@ -223,6 +247,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConfirmationRoute: typeof ConfirmationRoute
+  ExplorerRoute: typeof ExplorerRoute
   InscriptionRoute: typeof InscriptionRoute
   McpRoute: typeof McpRoute
   QuretiRoute: typeof QuretiRoute
@@ -262,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/inscription'
       fullPath: '/inscription'
       preLoaderRoute: typeof InscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explorer': {
+      id: '/explorer'
+      path: '/explorer'
+      fullPath: '/explorer'
+      preLoaderRoute: typeof ExplorerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confirmation': {
@@ -304,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/mon-album'
       fullPath: '/mon-album'
       preLoaderRoute: typeof AuthenticatedMonAlbumRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ajouter-serie': {
@@ -354,6 +393,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAjouterLivreRoute: typeof AuthenticatedAjouterLivreRoute
   AuthenticatedAjouterSerieRoute: typeof AuthenticatedAjouterSerieRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedMonAlbumRoute: typeof AuthenticatedMonAlbumRoute
   AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
 }
@@ -361,6 +401,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAjouterLivreRoute: AuthenticatedAjouterLivreRoute,
   AuthenticatedAjouterSerieRoute: AuthenticatedAjouterSerieRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedMonAlbumRoute: AuthenticatedMonAlbumRoute,
   AuthenticatedParametresRoute: AuthenticatedParametresRoute,
 }
@@ -372,6 +413,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConfirmationRoute: ConfirmationRoute,
+  ExplorerRoute: ExplorerRoute,
   InscriptionRoute: InscriptionRoute,
   McpRoute: McpRoute,
   QuretiRoute: QuretiRoute,
