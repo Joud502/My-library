@@ -70,6 +70,9 @@ function MonAlbum() {
 
   const booksQuery = useQuery({ queryKey: ["books"], queryFn: fetchBooks });
   const seriesQuery = useQuery({ queryKey: ["series"], queryFn: fetchSeries });
+  const ownersQuery = useQuery({ queryKey: ["owner-counts"], queryFn: fetchOwnerCounts });
+  const othersFor = (title: string) =>
+    Math.max((ownersQuery.data?.[titleKey(title)] ?? 1) - 1, 0);
 
   const removeBook = useMutation({
     mutationFn: deleteBook,
