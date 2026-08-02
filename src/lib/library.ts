@@ -49,6 +49,21 @@ export async function fetchSeries(): Promise<Serie[]> {
   return (data ?? []) as Serie[];
 }
 
+/** Nombre de personnes possédant le même titre, par titre normalisé. */
+export async function fetchOwnerCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.rpc("book_owner_counts");
+  if (error) return {};
+  const map: Record<string, number> = {};
+  for (const row of (data ?? []) as { title_key: string; owners: number }[]) {
+    map[row.title_key] = Number(row.owners);
+  }
+  return map;
+}
+
+export function titleKey(title: string) {
+  return title.trim().toLowerCase();
+}
+
 export async function deleteBook(id: string) {
   const { error } = await supabase.from("books").delete().eq("id", id);
   if (error) throw error;

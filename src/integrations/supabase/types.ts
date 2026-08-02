@@ -232,6 +232,13 @@ export type Database = {
     }
     Functions: {
       admin_exec_sql: { Args: { query: string }; Returns: Json }
+      book_owner_counts: {
+        Args: never
+        Returns: {
+          owners: number
+          title_key: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
