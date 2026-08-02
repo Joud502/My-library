@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Layers, Plus, Search, Trash2 } from "lucide-react";
+import { Layers, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteBook,
   deleteSerie,
   fetchBooks,
+  fetchOwnerCounts,
   fetchSeries,
+  titleKey,
   STATUS_LABELS,
   type Book,
 } from "@/lib/library";
