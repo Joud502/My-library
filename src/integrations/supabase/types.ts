@@ -178,29 +178,69 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          allow_chat: boolean
           birth_date: string | null
           created_at: string
           display_name: string | null
           id: string
+          is_public: boolean
+          username: string | null
         }
         Insert: {
+          allow_chat?: boolean
           birth_date?: string | null
           created_at?: string
           display_name?: string | null
           id: string
+          is_public?: boolean
+          username?: string | null
         }
         Update: {
+          allow_chat?: boolean
           birth_date?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          is_public?: boolean
+          username?: string | null
         }
         Relationships: []
       }
       series: {
         Row: {
+          author: string | null
           cover_url: string | null
           created_at: string
           description: string | null
@@ -209,6 +249,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          author?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -217,6 +258,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          author?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null

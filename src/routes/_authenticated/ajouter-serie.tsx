@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadCover } from "@/lib/library";
+import { languageError } from "@/lib/language-filter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/ajouter-serie")({
 
 const schema = z.object({
   name: z.string().trim().min(1, "Le nom est obligatoire").max(150),
+  author: z.string().trim().max(150).optional(),
   description: z.string().trim().max(1000).optional(),
 });
 
@@ -39,15 +41,24 @@ function AjouterSerie() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
+  const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = schema.safeParse({ name, description });
+    const parsed = schema.safeParse({ name, author, description });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
+      return;
+    }
+    const badLanguage =
+      languageError(parsed.data.name, "Le nom de la série") ??
+      languageError(parsed.data.author ?? "", "Le nom de l'auteur") ??
+      languageError(parsed.data.description ?? "", "La description");
+    if (badLanguage) {
+      toast.error("Contenu refusé", { description: badLanguage });
       return;
     }
     setSaving(true);
@@ -62,6 +73,7 @@ function AjouterSerie() {
       const { error } = await supabase.from("series").insert({
         user_id: userId,
         name: parsed.data.name,
+        author: parsed.data.author || null,
         description: parsed.data.description || null,
         cover_url: coverPath,
       });
@@ -95,6 +107,15 @@ function AjouterSerie() {
             maxLength={150}
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="serie-author">Auteur</Label>
+          <Input
+            id="serie-author"
+            maxLength={150}
+            value={author}
+            onChange={(e) => setAuthor(e.target.value)}
           />
         </div>
         <div className="space-y-2">

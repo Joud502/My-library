@@ -6,7 +6,16 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookMarked, LibraryBig, LogOut, Plus, Layers } from "lucide-react";
+import {
+  BookMarked,
+  LibraryBig,
+  LogOut,
+  Plus,
+  Layers,
+  MessageCircle,
+  Settings,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +33,9 @@ const sections = [
   { to: "/mon-album", label: "Mon album", icon: LibraryBig },
   { to: "/ajouter-livre", label: "Ajouter un livre", icon: Plus },
   { to: "/ajouter-serie", label: "Ajouter une série", icon: Layers },
+  { to: "/explorer", label: "Explorer", icon: Users },
+  { to: "/messages", label: "Messages", icon: MessageCircle },
+  { to: "/parametres", label: "Paramètres", icon: Settings },
 ] as const;
 
 function AuthenticatedLayout() {

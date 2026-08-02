@@ -1,0 +1,1 @@
+ALTER TABLE public.series ADD COLUMN IF NOT EXISTS author text;
