@@ -240,6 +240,7 @@ export type Database = {
       }
       series: {
         Row: {
+          author: string | null
           cover_url: string | null
           created_at: string
           description: string | null
@@ -248,6 +249,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          author?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -256,6 +258,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          author?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
