@@ -16,6 +16,8 @@ import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as AuthenticatedParametresRouteImport } from './routes/_authenticated/parametres'
 import { Route as AuthenticatedMonAlbumRouteImport } from './routes/_authenticated/mon-album'
 import { Route as AuthenticatedAjouterSerieRouteImport } from './routes/_authenticated/ajouter-serie'
 import { Route as AuthenticatedAjouterLivreRouteImport } from './routes/_authenticated/ajouter-livre'
@@ -57,6 +59,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedParametresRoute = AuthenticatedParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMonAlbumRoute = AuthenticatedMonAlbumRouteImport.update({
   id: '/mon-album',
@@ -111,6 +123,8 @@ export interface FileRoutesByFullPath {
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
   '/mon-album': typeof AuthenticatedMonAlbumRoute
+  '/parametres': typeof AuthenticatedParametresRoute
+  '/u/$username': typeof UUsernameRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -126,6 +140,8 @@ export interface FileRoutesByTo {
   '/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
   '/mon-album': typeof AuthenticatedMonAlbumRoute
+  '/parametres': typeof AuthenticatedParametresRoute
+  '/u/$username': typeof UUsernameRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -143,6 +159,8 @@ export interface FileRoutesById {
   '/_authenticated/ajouter-livre': typeof AuthenticatedAjouterLivreRoute
   '/_authenticated/ajouter-serie': typeof AuthenticatedAjouterSerieRoute
   '/_authenticated/mon-album': typeof AuthenticatedMonAlbumRoute
+  '/_authenticated/parametres': typeof AuthenticatedParametresRoute
+  '/u/$username': typeof UUsernameRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -160,6 +178,8 @@ export interface FileRouteTypes {
     | '/ajouter-livre'
     | '/ajouter-serie'
     | '/mon-album'
+    | '/parametres'
+    | '/u/$username'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   fileRoutesByTo: FileRoutesByTo
@@ -175,6 +195,8 @@ export interface FileRouteTypes {
     | '/ajouter-livre'
     | '/ajouter-serie'
     | '/mon-album'
+    | '/parametres'
+    | '/u/$username'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   id:
@@ -191,6 +213,8 @@ export interface FileRouteTypes {
     | '/_authenticated/ajouter-livre'
     | '/_authenticated/ajouter-serie'
     | '/_authenticated/mon-album'
+    | '/_authenticated/parametres'
+    | '/u/$username'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   fileRoutesById: FileRoutesById
@@ -205,6 +229,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  UUsernameRoute: typeof UUsernameRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -259,6 +284,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/parametres': {
+      id: '/_authenticated/parametres'
+      path: '/parametres'
+      fullPath: '/parametres'
+      preLoaderRoute: typeof AuthenticatedParametresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/mon-album': {
       id: '/_authenticated/mon-album'
@@ -316,12 +355,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAjouterLivreRoute: typeof AuthenticatedAjouterLivreRoute
   AuthenticatedAjouterSerieRoute: typeof AuthenticatedAjouterSerieRoute
   AuthenticatedMonAlbumRoute: typeof AuthenticatedMonAlbumRoute
+  AuthenticatedParametresRoute: typeof AuthenticatedParametresRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAjouterLivreRoute: AuthenticatedAjouterLivreRoute,
   AuthenticatedAjouterSerieRoute: AuthenticatedAjouterSerieRoute,
   AuthenticatedMonAlbumRoute: AuthenticatedMonAlbumRoute,
+  AuthenticatedParametresRoute: AuthenticatedParametresRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -338,6 +379,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  UUsernameRoute: UUsernameRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
