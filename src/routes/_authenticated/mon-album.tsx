@@ -218,6 +218,14 @@ function MonAlbum() {
                       </span>
                     ) : null}
                   </div>
+                  <p className="flex items-center gap-1.5 pt-2 text-[11px] text-muted-foreground">
+                    <Users className="h-3.5 w-3.5 text-primary" />
+                    {othersFor(book.title) === 0
+                      ? "Personne d'autre n'a ce livre"
+                      : othersFor(book.title) === 1
+                        ? "1 personne a le même livre que vous"
+                        : `${othersFor(book.title)} personnes ont le même livre que vous`}
+                  </p>
                   {book.notes && (
                     <p className="line-clamp-2 pt-2 text-xs text-muted-foreground">{book.notes}</p>
                   )}
