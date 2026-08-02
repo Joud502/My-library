@@ -73,6 +73,7 @@ function AjouterSerie() {
       const { error } = await supabase.from("series").insert({
         user_id: userId,
         name: parsed.data.name,
+        author: parsed.data.author || null,
         description: parsed.data.description || null,
         cover_url: coverPath,
       });
@@ -106,6 +107,15 @@ function AjouterSerie() {
             maxLength={150}
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="serie-author">Auteur</Label>
+          <Input
+            id="serie-author"
+            maxLength={150}
+            value={author}
+            onChange={(e) => setAuthor(e.target.value)}
           />
         </div>
         <div className="space-y-2">

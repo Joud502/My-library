@@ -20,6 +20,7 @@ export type Serie = {
   id: string;
   user_id: string;
   name: string;
+  author: string | null;
   description: string | null;
   cover_url: string | null;
   created_at: string;
