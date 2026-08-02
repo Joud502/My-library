@@ -22,8 +22,7 @@ function normalize(value: string) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[013457
-8@$]/g, (c) => LEET[c] ?? c)
+    .replace(/[013457 8@$]/g, (c) => LEET[c] ?? c)
     .replace(/[^a-z ]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
