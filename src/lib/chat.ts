@@ -86,3 +86,47 @@ export async function markThreadRead(peerId: string) {
 export function pairChannel(prefix: string, a: string, b: string) {
   return `${prefix}-${[a, b].sort().join("-")}`;
 }
+
+const FILE_PREFIX = "::file::";
+
+export type Attachment = { path: string; name: string };
+
+/** Détecte une pièce jointe encodée dans le contenu d'un message. */
+export function parseAttachment(content: string): Attachment | null {
+  if (!content.startsWith(FILE_PREFIX)) return null;
+  const [path, name] = content.slice(FILE_PREFIX.length).split("::");
+  if (!path) return null;
+  return { path, name: name || "fichier" };
+}
+
+/** Envoie un fichier dans la conversation (stocké de façon privée). */
+export async function sendFile(recipientId: string, file: File) {
+  const me = await getUserId();
+  if (!me) throw new Error("Session expirée, reconnectez-vous.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("Fichier trop lourd (10 Mo max).");
+  const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);
+  const path = `${me}/${crypto.randomUUID()}-${safeName}`;
+  const { error } = await supabase.storage.from("chat-files").upload(path, file, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (error) throw error;
+  const { error: insertError } = await supabase
+    .from("messages")
+    .insert({
+      sender_id: me,
+      recipient_id: recipientId,
+      content: `${FILE_PREFIX}${path}::${safeName}`,
+    });
+  if (insertError) {
+    if (insertError.code === "42501") throw new Error("Ce membre n'accepte pas les messages.");
+    throw insertError;
+  }
+}
+
+/** URL signée temporaire pour télécharger une pièce jointe. */
+export async function attachmentUrl(path: string) {
+  const { data, error } = await supabase.storage.from("chat-files").createSignedUrl(path, 3600);
+  if (error) throw error;
+  return data.signedUrl;
+}

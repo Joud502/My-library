@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MessageCircle, Search, Send } from "lucide-react";
+import { Loader2, MessageCircle, Paperclip, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,14 +10,19 @@ import {
   fetchMessages,
   fetchThreads,
   markThreadRead,
+  parseAttachment,
+  sendFile,
   sendMessage,
 } from "@/lib/chat";
 import { fetchChatProfiles, getUserId, profileLabel } from "@/lib/profile";
 import { languageError } from "@/lib/language-filter";
 import { VoiceCall } from "@/components/VoiceCall";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { ChatAttachment } from "@/components/ChatAttachment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/messages")({
   validateSearch: z.object({ peer: z.string().optional() }),
@@ -49,6 +54,7 @@ function Messages() {
   const [draft, setDraft] = useState("");
   const [peopleSearch, setPeopleSearch] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void getUserId().then(setMe);
@@ -114,6 +120,18 @@ function Messages() {
       queryClient.invalidateQueries({ queryKey: ["threads"] });
     },
     onError: (error) => toast.error("Envoi impossible", { description: error.message }),
+  });
+
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      if (!peer) throw new Error("Choisissez un destinataire.");
+      await sendFile(peer, file);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
+    },
+    onError: (error) => toast.error("Fichier non envoyé", { description: error.message }),
   });
 
   function openPeer(id: string) {
@@ -214,30 +232,62 @@ function Messages() {
                   Aucun message. Dites bonjour !
                 </p>
               ) : (
-                conversation.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
-                      message.sender_id === me
-                        ? "ml-auto bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground",
-                    )}
-                  >
-                    {message.content}
-                  </div>
-                ))
+                conversation.map((message) => {
+                  const attachment = parseAttachment(message.content);
+                  return (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+                        message.sender_id === me
+                          ? "ml-auto bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground",
+                      )}
+                    >
+                      {attachment ? (
+                        <ChatAttachment attachment={attachment} />
+                      ) : (
+                        message.content
+                      )}
+                    </div>
+                  );
+                })
               )}
               <div ref={bottomRef} />
             </div>
 
             <form
-              className="flex gap-2 border-t border-border pt-3"
+              className="flex items-center gap-1 border-t border-border pt-3"
               onSubmit={(e) => {
                 e.preventDefault();
                 send.mutate();
               }}
             >
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) upload.mutate(file);
+                }}
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                aria-label="Joindre un fichier"
+                disabled={upload.isPending}
+                onClick={() => fileRef.current?.click()}
+              >
+                {upload.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Paperclip className="h-4 w-4" />
+                )}
+              </Button>
+              <EmojiPicker onSelect={(emoji) => setDraft((d) => `${d}${emoji}`)} />
               <Input
                 value={draft}
                 maxLength={2000}
@@ -253,6 +303,7 @@ function Messages() {
                 )}
               </Button>
             </form>
+
           </>
         )}
       </section>
