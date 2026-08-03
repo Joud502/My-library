@@ -92,10 +92,11 @@ function Messages() {
   }, [conversation.length]);
 
   const threads = threadsQuery.data ?? [];
-  const people = (peopleQuery.data ?? []).filter((p) => p.id !== me && p.allow_chat);
+  const people = (peopleQuery.data ?? []).filter((p) => p.id !== me);
   const peerProfile =
     threads.find((t) => t.peerId === peer)?.peer ?? people.find((p) => p.id === peer) ?? null;
-  const peerName = peerProfile?.username ? `@${peerProfile.username}` : "ce membre";
+  const peerName = peerProfile ? profileLabel(peerProfile) : "ce membre";
+
 
   const send = useMutation({
     mutationFn: async () => {
