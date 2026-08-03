@@ -57,9 +57,10 @@ function Messages() {
   const threadsQuery = useQuery({ queryKey: ["threads"], queryFn: fetchThreads });
   const messagesQuery = useQuery({ queryKey: ["messages"], queryFn: fetchMessages });
   const peopleQuery = useQuery({
-    queryKey: ["public-profiles", peopleSearch],
-    queryFn: () => fetchPublicProfiles(peopleSearch),
+    queryKey: ["chat-profiles", peopleSearch],
+    queryFn: () => fetchChatProfiles(peopleSearch),
   });
+
 
   useEffect(() => {
     const channel = supabase
