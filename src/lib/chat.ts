@@ -94,9 +94,7 @@ export type Attachment = { path: string; name: string };
 /** Détecte une pièce jointe encodée dans le contenu d'un message. */
 export function parseAttachment(content: string): Attachment | null {
   if (!content.startsWith(FILE_PREFIX)) return null;
-  const [, path, name] = content.split("::").filter(Boolean).length
-    ? [null, ...content.slice(FILE_PREFIX.length).split("::")]
-    : [];
+  const [path, name] = content.slice(FILE_PREFIX.length).split("::");
   if (!path) return null;
   return { path, name: name || "fichier" };
 }
