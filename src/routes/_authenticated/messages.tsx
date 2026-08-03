@@ -54,6 +54,7 @@ function Messages() {
   const [draft, setDraft] = useState("");
   const [peopleSearch, setPeopleSearch] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void getUserId().then(setMe);
@@ -119,6 +120,18 @@ function Messages() {
       queryClient.invalidateQueries({ queryKey: ["threads"] });
     },
     onError: (error) => toast.error("Envoi impossible", { description: error.message }),
+  });
+
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      if (!peer) throw new Error("Choisissez un destinataire.");
+      await sendFile(peer, file);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
+    },
+    onError: (error) => toast.error("Fichier non envoyé", { description: error.message }),
   });
 
   function openPeer(id: string) {
