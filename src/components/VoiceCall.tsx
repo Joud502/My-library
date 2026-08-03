@@ -82,12 +82,16 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
       .on("broadcast", { event: "offer" }, ({ payload }) => {
         if (payload.from === me) return;
         pendingOffer.current = payload.sdp as RTCSessionDescriptionInit;
-        setState("ringing");
+        goTo("ringing");
+        stopRing();
+        stopRingRef.current = startRingTone("incoming");
       })
       .on("broadcast", { event: "answer" }, async ({ payload }) => {
         if (payload.from === me || !pcRef.current) return;
         await pcRef.current.setRemoteDescription(payload.sdp as RTCSessionDescriptionInit);
-        setState("in-call");
+        stopRing();
+        playCallStart();
+        goTo("in-call");
       })
       .on("broadcast", { event: "ice" }, async ({ payload }) => {
         if (payload.from === me || !pcRef.current) return;
@@ -104,7 +108,7 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
       .subscribe();
 
     return () => {
-      cleanup();
+      cleanup(true);
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
@@ -117,10 +121,13 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       send("offer", { sdp: offer });
-      setState("calling");
+      goTo("calling");
+      playCallStart();
+      stopRing();
+      stopRingRef.current = startRingTone("outgoing");
     } catch {
       toast.error("Micro indisponible", { description: "Autorisez le microphone pour appeler." });
-      cleanup();
+      cleanup(true);
     }
   }
 
@@ -132,12 +139,15 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       send("answer", { sdp: answer });
-      setState("in-call");
+      stopRing();
+      playCallStart();
+      goTo("in-call");
     } catch {
       toast.error("Impossible de répondre à l'appel");
       cleanup();
     }
   }
+
 
   function hangup() {
     send("hangup", {});
