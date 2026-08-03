@@ -159,16 +159,26 @@ function Messages() {
         )}
 
         <div className="space-y-2 border-t border-border pt-3">
-          <div className="relative">
+          <form
+            className="relative"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const first = people[0];
+              if (first) openPeer(first.id);
+            }}
+          >
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Trouver un pseudo…"
+              placeholder="Trouver un membre (pseudo ou nom)…"
               value={peopleSearch}
               onChange={(e) => setPeopleSearch(e.target.value)}
               aria-label="Rechercher un membre"
             />
-          </div>
+          </form>
+          {peopleSearch.trim() && people.length === 0 && !peopleQuery.isLoading && (
+            <p className="px-1 text-xs text-muted-foreground">Aucun membre trouvé.</p>
+          )}
           <ul className="space-y-1">
             {people.slice(0, 8).map((profile) => (
               <li key={profile.id}>
@@ -177,11 +187,12 @@ function Messages() {
                   onClick={() => openPeer(profile.id)}
                   className="w-full truncate rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary"
                 >
-                  @{profile.username}
+                  {profileLabel(profile)}
                 </button>
               </li>
             ))}
           </ul>
+
         </div>
       </aside>
 
