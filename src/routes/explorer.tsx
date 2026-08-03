@@ -45,23 +45,26 @@ function Explorer() {
           </p>
         </header>
 
-        <div className="relative">
+        <form className="relative" onSubmit={(e) => e.preventDefault()}>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Rechercher un pseudo…"
+            placeholder="Rechercher un pseudo ou un nom…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            aria-label="Rechercher un pseudo"
+            aria-label="Rechercher un membre"
           />
-        </div>
+        </form>
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Chargement…</p>
         ) : (data ?? []).length === 0 ? (
           <p className="rounded-xl bg-card p-10 text-center text-sm text-muted-foreground shadow-card">
-            Aucun album public pour l'instant.
+            {search.trim()
+              ? "Aucun membre public ne correspond à cette recherche."
+              : "Aucun album public pour l'instant. Activez « Album public » dans vos paramètres pour apparaître ici."}
           </p>
+
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
             {(data ?? []).map((profile) => (

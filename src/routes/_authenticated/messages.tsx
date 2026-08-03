@@ -12,7 +12,7 @@ import {
   markThreadRead,
   sendMessage,
 } from "@/lib/chat";
-import { fetchPublicProfiles, getUserId } from "@/lib/profile";
+import { fetchChatProfiles, getUserId, profileLabel } from "@/lib/profile";
 import { languageError } from "@/lib/language-filter";
 import { VoiceCall } from "@/components/VoiceCall";
 import { Button } from "@/components/ui/button";
@@ -57,9 +57,10 @@ function Messages() {
   const threadsQuery = useQuery({ queryKey: ["threads"], queryFn: fetchThreads });
   const messagesQuery = useQuery({ queryKey: ["messages"], queryFn: fetchMessages });
   const peopleQuery = useQuery({
-    queryKey: ["public-profiles", peopleSearch],
-    queryFn: () => fetchPublicProfiles(peopleSearch),
+    queryKey: ["chat-profiles", peopleSearch],
+    queryFn: () => fetchChatProfiles(peopleSearch),
   });
+
 
   useEffect(() => {
     const channel = supabase
@@ -91,10 +92,11 @@ function Messages() {
   }, [conversation.length]);
 
   const threads = threadsQuery.data ?? [];
-  const people = (peopleQuery.data ?? []).filter((p) => p.id !== me && p.allow_chat);
+  const people = (peopleQuery.data ?? []).filter((p) => p.id !== me);
   const peerProfile =
     threads.find((t) => t.peerId === peer)?.peer ?? people.find((p) => p.id === peer) ?? null;
-  const peerName = peerProfile?.username ? `@${peerProfile.username}` : "ce membre";
+  const peerName = peerProfile ? profileLabel(peerProfile) : "ce membre";
+
 
   const send = useMutation({
     mutationFn: async () => {
@@ -140,8 +142,9 @@ function Messages() {
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate font-medium">
-                      {thread.peer?.username ? `@${thread.peer.username}` : "Membre"}
+                      {profileLabel(thread.peer)}
                     </span>
+
                     {thread.unread > 0 && (
                       <span className="rounded-full bg-accent px-2 text-[11px] text-accent-foreground">
                         {thread.unread}
@@ -156,16 +159,26 @@ function Messages() {
         )}
 
         <div className="space-y-2 border-t border-border pt-3">
-          <div className="relative">
+          <form
+            className="relative"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const first = people[0];
+              if (first) openPeer(first.id);
+            }}
+          >
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Trouver un pseudo…"
+              placeholder="Trouver un membre (pseudo ou nom)…"
               value={peopleSearch}
               onChange={(e) => setPeopleSearch(e.target.value)}
               aria-label="Rechercher un membre"
             />
-          </div>
+          </form>
+          {peopleSearch.trim() && people.length === 0 && !peopleQuery.isLoading && (
+            <p className="px-1 text-xs text-muted-foreground">Aucun membre trouvé.</p>
+          )}
           <ul className="space-y-1">
             {people.slice(0, 8).map((profile) => (
               <li key={profile.id}>
@@ -174,11 +187,12 @@ function Messages() {
                   onClick={() => openPeer(profile.id)}
                   className="w-full truncate rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary"
                 >
-                  @{profile.username}
+                  {profileLabel(profile)}
                 </button>
               </li>
             ))}
           </ul>
+
         </div>
       </aside>
 
