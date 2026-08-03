@@ -12,7 +12,7 @@ import {
   markThreadRead,
   sendMessage,
 } from "@/lib/chat";
-import { fetchPublicProfiles, getUserId } from "@/lib/profile";
+import { fetchChatProfiles, getUserId, profileLabel } from "@/lib/profile";
 import { languageError } from "@/lib/language-filter";
 import { VoiceCall } from "@/components/VoiceCall";
 import { Button } from "@/components/ui/button";
