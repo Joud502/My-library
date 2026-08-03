@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MessageCircle, Search, Send } from "lucide-react";
+import { Loader2, MessageCircle, Paperclip, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,14 +10,19 @@ import {
   fetchMessages,
   fetchThreads,
   markThreadRead,
+  parseAttachment,
+  sendFile,
   sendMessage,
 } from "@/lib/chat";
 import { fetchChatProfiles, getUserId, profileLabel } from "@/lib/profile";
 import { languageError } from "@/lib/language-filter";
 import { VoiceCall } from "@/components/VoiceCall";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { ChatAttachment } from "@/components/ChatAttachment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/messages")({
   validateSearch: z.object({ peer: z.string().optional() }),
