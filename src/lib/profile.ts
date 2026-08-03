@@ -54,6 +54,12 @@ export async function updateMyProfile(patch: {
   }
 }
 
+export function profileLabel(profile: Pick<Profile, "username" | "display_name"> | null) {
+  if (!profile) return "Membre";
+  if (profile.username) return `@${profile.username}`;
+  return profile.display_name?.trim() || "Membre";
+}
+
 export async function fetchPublicProfiles(search = ""): Promise<Profile[]> {
   let query = supabase
     .from("profiles")
@@ -62,11 +68,28 @@ export async function fetchPublicProfiles(search = ""): Promise<Profile[]> {
     .not("username", "is", null)
     .order("created_at", { ascending: false })
     .limit(60);
-  if (search.trim()) query = query.ilike("username", `%${search.trim()}%`);
+  const term = search.trim();
+  if (term) query = query.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
   const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as Profile[];
 }
+
+/** Membres joignables par message (album public ou non). */
+export async function fetchChatProfiles(search = ""): Promise<Profile[]> {
+  let query = supabase
+    .from("profiles")
+    .select(FIELDS)
+    .eq("allow_chat", true)
+    .order("created_at", { ascending: false })
+    .limit(60);
+  const term = search.trim();
+  if (term) query = query.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Profile[];
+}
+
 
 export async function fetchPublicAlbum(username: string): Promise<{
   profile: Profile;
