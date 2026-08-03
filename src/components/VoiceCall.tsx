@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { pairChannel } from "@/lib/chat";
+import { playCallEnd, playCallStart, startRingTone } from "@/lib/call-sounds";
 import { Button } from "@/components/ui/button";
 
 type CallState = "idle" | "calling" | "ringing" | "in-call";
@@ -19,16 +20,32 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
   const localRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
+  const stopRingRef = useRef<(() => void) | null>(null);
+  const stateRef = useRef<CallState>("idle");
 
-  function cleanup() {
+  function stopRing() {
+    stopRingRef.current?.();
+    stopRingRef.current = null;
+  }
+
+  function goTo(next: CallState) {
+    stateRef.current = next;
+    setState(next);
+  }
+
+  function cleanup(silent = false) {
+    const wasActive = stateRef.current !== "idle";
+    stopRing();
     pcRef.current?.close();
     pcRef.current = null;
     localRef.current?.getTracks().forEach((t) => t.stop());
     localRef.current = null;
     pendingOffer.current = null;
     setMuted(false);
-    setState("idle");
+    goTo("idle");
+    if (wasActive && !silent) playCallEnd();
   }
+
 
   async function createPeer() {
     const pc = new RTCPeerConnection(ICE);
