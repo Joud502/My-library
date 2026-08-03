@@ -142,8 +142,9 @@ function Messages() {
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate font-medium">
-                      {thread.peer?.username ? `@${thread.peer.username}` : "Membre"}
+                      {profileLabel(thread.peer)}
                     </span>
+
                     {thread.unread > 0 && (
                       <span className="rounded-full bg-accent px-2 text-[11px] text-accent-foreground">
                         {thread.unread}
