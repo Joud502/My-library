@@ -219,30 +219,62 @@ function Messages() {
                   Aucun message. Dites bonjour !
                 </p>
               ) : (
-                conversation.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
-                      message.sender_id === me
-                        ? "ml-auto bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground",
-                    )}
-                  >
-                    {message.content}
-                  </div>
-                ))
+                conversation.map((message) => {
+                  const attachment = parseAttachment(message.content);
+                  return (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+                        message.sender_id === me
+                          ? "ml-auto bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground",
+                      )}
+                    >
+                      {attachment ? (
+                        <ChatAttachment attachment={attachment} />
+                      ) : (
+                        message.content
+                      )}
+                    </div>
+                  );
+                })
               )}
               <div ref={bottomRef} />
             </div>
 
             <form
-              className="flex gap-2 border-t border-border pt-3"
+              className="flex items-center gap-1 border-t border-border pt-3"
               onSubmit={(e) => {
                 e.preventDefault();
                 send.mutate();
               }}
             >
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) upload.mutate(file);
+                }}
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                aria-label="Joindre un fichier"
+                disabled={upload.isPending}
+                onClick={() => fileRef.current?.click()}
+              >
+                {upload.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Paperclip className="h-4 w-4" />
+                )}
+              </Button>
+              <EmojiPicker onSelect={(emoji) => setDraft((d) => `${d}${emoji}`)} />
               <Input
                 value={draft}
                 maxLength={2000}
@@ -258,6 +290,7 @@ function Messages() {
                 )}
               </Button>
             </form>
+
           </>
         )}
       </section>
