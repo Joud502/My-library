@@ -93,42 +93,50 @@ export function NotificationCenter() {
             const preview = parseAttachment(message.content)
               ? "📎 Pièce jointe"
               : message.content.slice(0, 80);
-            toast(`Message de ${name}`, {
-              description: preview,
-              duration: 20000,
-              action: {
-                label: "Répondre",
-                onClick: () =>
-                  void navigate({ to: "/messages", search: { peer: message.sender_id } }),
-              },
-              cancel: {
-                label: "Muet 1 h",
-                onClick: () => {
-                  mutePeer(message.sender_id, 60);
-                  toast.success(`Notifications de ${name} coupées pendant 1 heure.`);
-                },
-              },
-              actionButtonStyle: undefined,
-              onDismiss: () => undefined,
-              closeButton: true,
-              important: true,
-              descriptionClassName: "",
-              onAutoClose: () => undefined,
-              id: `msg-${message.sender_id}`,
-              // Marquer comme lu proposé en complément dans la description ci-dessous
-            });
-            toast("Marquer comme lu ?", {
-              id: `read-${message.sender_id}`,
-              duration: 20000,
-              action: {
-                label: "Marquer comme lu",
-                onClick: async () => {
-                  await markThreadRead(message.sender_id);
-                  queryClient.invalidateQueries({ queryKey: ["threads"] });
-                  queryClient.invalidateQueries({ queryKey: ["messages"] });
-                },
-              },
-            });
+            toast.custom(
+              (id) => (
+                <div className="w-[340px] rounded-xl border border-border bg-card p-4 shadow-card">
+                  <p className="text-sm font-semibold">Message de {name}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{preview}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        toast.dismiss(id);
+                        void navigate({ to: "/messages", search: { peer: message.sender_id } });
+                      }}
+                    >
+                      Répondre
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        mutePeer(message.sender_id, 60);
+                        toast.dismiss(id);
+                        toast.success(`Notifications de ${name} coupées 1 heure.`);
+                      }}
+                    >
+                      Muet 1 h
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={async () => {
+                        toast.dismiss(id);
+                        await markThreadRead(message.sender_id);
+                        queryClient.invalidateQueries({ queryKey: ["threads"] });
+                        queryClient.invalidateQueries({ queryKey: ["messages"] });
+                      }}
+                    >
+                      Marquer comme lu
+                    </Button>
+                  </div>
+                </div>
+              ),
+              { duration: 20000, id: `msg-${message.sender_id}` },
+            );
+
           },
         )
         .subscribe();
