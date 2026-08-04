@@ -13,6 +13,7 @@ import {
 } from "@/lib/chat";
 import { getUserId, profileLabel, type Profile } from "@/lib/profile";
 import { startRingTone } from "@/lib/call-sounds";
+import { fetchFriendLinks, isFriend, respondFriendRequest } from "@/lib/friends";
 import { Button } from "@/components/ui/button";
 
 
@@ -44,6 +45,8 @@ export function NotificationCenter() {
         .on("broadcast", { event: "ring" }, async ({ payload }) => {
           const from = payload.from as string;
           if (!from || from === me) return;
+          // Seuls les amis peuvent faire sonner votre appareil.
+          if (!isFriend(await fetchFriendLinks(), from)) return;
           const name = await peerName(from);
           const stopRing = startRingTone("incoming");
           const id = toast(`${name} vous appelle`, {
@@ -84,6 +87,7 @@ export function NotificationCenter() {
           async ({ new: row }) => {
             const message = row as { sender_id: string; content: string };
             if (isPeerMuted(message.sender_id)) return;
+            if (!isFriend(await fetchFriendLinks(), message.sender_id)) return;
             if (
               typeof window !== "undefined" &&
               window.location.pathname.startsWith("/messages") &&
@@ -143,7 +147,44 @@ export function NotificationCenter() {
         )
         .subscribe();
 
+      const friendChannel = supabase
+        .channel("friend-requests-inbox")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "friend_requests",
+            filter: `addressee_id=eq.${me}`,
+          },
+          async ({ new: row }) => {
+            const request = row as { id: string; requester_id: string };
+            const name = await peerName(request.requester_id);
+            queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+            toast(`${name} veut devenir votre ami`, {
+              duration: 30000,
+              action: {
+                label: "Accepter",
+                onClick: async () => {
+                  await respondFriendRequest(request.id, true);
+                  queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+                  toast.success(`Vous êtes maintenant amis avec ${name}.`);
+                },
+              },
+              cancel: {
+                label: "Refuser",
+                onClick: async () => {
+                  await respondFriendRequest(request.id, false);
+                  queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+                },
+              },
+            });
+          },
+        )
+        .subscribe();
+
       cleanup = () => {
+        supabase.removeChannel(friendChannel);
         supabase.removeChannel(callChannel);
         supabase.removeChannel(msgChannel);
       };

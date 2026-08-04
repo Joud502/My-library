@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MessageCircle, Paperclip, Search, Send } from "lucide-react";
+import { Check, Loader2, MessageCircle, Paperclip, Search, Send, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,17 @@ import {
   sendFile,
   sendMessage,
 } from "@/lib/chat";
+import {
+  fetchFriendLinks,
+  friendsOf,
+  incomingRequests,
+  isFriend,
+  linkWith,
+  outgoingRequests,
+  removeFriendLink,
+  respondFriendRequest,
+  sendFriendRequest,
+} from "@/lib/friends";
 import { fetchChatProfiles, getUserId, profileLabel } from "@/lib/profile";
 import { languageError } from "@/lib/language-filter";
 import { VoiceCall } from "@/components/VoiceCall";
@@ -22,6 +33,7 @@ import { ChatAttachment } from "@/components/ChatAttachment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
 
 
 export const Route = createFileRoute("/_authenticated/messages")({
@@ -66,6 +78,7 @@ function Messages() {
     queryKey: ["chat-profiles", peopleSearch],
     queryFn: () => fetchChatProfiles(peopleSearch),
   });
+  const friendsQuery = useQuery({ queryKey: ["friend-links"], queryFn: fetchFriendLinks });
 
 
   useEffect(() => {
@@ -74,6 +87,9 @@ function Messages() {
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
         queryClient.invalidateQueries({ queryKey: ["messages"] });
         queryClient.invalidateQueries({ queryKey: ["threads"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "friend_requests" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["friend-links"] });
       })
       .subscribe();
     return () => {
@@ -98,10 +114,45 @@ function Messages() {
   }, [conversation.length]);
 
   const threads = threadsQuery.data ?? [];
+  const links = friendsQuery.data ?? [];
+  const friends = friendsOf(links);
+  const pendingIn = incomingRequests(links);
+  const pendingOut = outgoingRequests(links);
   const people = (peopleQuery.data ?? []).filter((p) => p.id !== me);
   const peerProfile =
-    threads.find((t) => t.peerId === peer)?.peer ?? people.find((p) => p.id === peer) ?? null;
+    threads.find((t) => t.peerId === peer)?.peer ??
+    links.find((l) => l.peerId === peer)?.peer ??
+    people.find((p) => p.id === peer) ??
+    null;
   const peerName = peerProfile ? profileLabel(peerProfile) : "ce membre";
+  const friendly = peer ? isFriend(links, peer) : false;
+  const pendingIncoming = peer ? (pendingIn.find((l) => l.peerId === peer) ?? null) : null;
+  const pendingOutgoing = peer ? (pendingOut.find((l) => l.peerId === peer) ?? null) : null;
+
+  const addFriend = useMutation({
+    mutationFn: (peerId: string) => sendFriendRequest(peerId),
+    onSuccess: () => {
+      toast.success("Demande d'ami envoyée");
+      queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+    },
+    onError: (error) => toast.error("Demande impossible", { description: error.message }),
+  });
+
+  const respond = useMutation({
+    mutationFn: ({ id, accept }: { id: string; accept: boolean }) => respondFriendRequest(id, accept),
+    onSuccess: (_data, variables) => {
+      toast.success(variables.accept ? "Demande acceptée" : "Demande refusée");
+      queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+    },
+    onError: (error) => toast.error("Action impossible", { description: error.message }),
+  });
+
+  const cancelLink = useMutation({
+    mutationFn: (id: string) => removeFriendLink(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["friend-links"] }),
+    onError: (error) => toast.error("Action impossible", { description: error.message }),
+  });
+
 
 
   const send = useMutation({
@@ -176,6 +227,58 @@ function Messages() {
           </ul>
         )}
 
+        {pendingIn.length > 0 && (
+          <div className="space-y-2 border-t border-border pt-3">
+            <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Demandes d'ami
+            </p>
+            <ul className="space-y-1">
+              {pendingIn.map((link) => (
+                <li key={link.request.id} className="flex items-center gap-1 rounded-lg px-2 py-1">
+                  <span className="flex-1 truncate text-sm">{profileLabel(link.peer)}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Accepter"
+                    onClick={() => respond.mutate({ id: link.request.id, accept: true })}
+                  >
+                    <Check className="h-4 w-4 text-primary" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Refuser"
+                    onClick={() => respond.mutate({ id: link.request.id, accept: false })}
+                  >
+                    <X className="h-4 w-4 text-destructive" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {friends.length > 0 && (
+          <div className="space-y-1 border-t border-border pt-3">
+            <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Mes amis
+            </p>
+            {friends.map((link) => (
+              <button
+                key={link.request.id}
+                type="button"
+                onClick={() => openPeer(link.peerId)}
+                className={cn(
+                  "w-full truncate rounded-lg px-3 py-1.5 text-left text-sm transition-colors hover:bg-secondary",
+                  peer === link.peerId && "bg-primary text-primary-foreground hover:bg-primary",
+                )}
+              >
+                {profileLabel(link.peer)}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-2 border-t border-border pt-3">
           <form
             className="relative"
@@ -198,33 +301,89 @@ function Messages() {
             <p className="px-1 text-xs text-muted-foreground">Aucun membre trouvé.</p>
           )}
           <ul className="space-y-1">
-            {people.slice(0, 8).map((profile) => (
-              <li key={profile.id}>
-                <button
-                  type="button"
-                  onClick={() => openPeer(profile.id)}
-                  className="w-full truncate rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary"
-                >
-                  {profileLabel(profile)}
-                </button>
-              </li>
-            ))}
+            {people.slice(0, 8).map((profile) => {
+              const link = linkWith(links, profile.id);
+              return (
+                <li key={profile.id} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => openPeer(profile.id)}
+                    className="flex-1 truncate rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary"
+                  >
+                    {profileLabel(profile)}
+                  </button>
+                  {link?.request.status === "accepted" ? (
+                    <span className="px-1 text-[11px] text-muted-foreground">Ami</span>
+                  ) : link?.request.status === "pending" ? (
+                    <span className="px-1 text-[11px] text-muted-foreground">
+                      {link.outgoing ? "Envoyée" : "Reçue"}
+                    </span>
+                  ) : (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Envoyer une demande d'ami"
+                      onClick={() => addFriend.mutate(profile.id)}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
-
         </div>
+
       </aside>
 
       <section className="flex min-h-[60vh] flex-col rounded-xl bg-card p-4 shadow-card">
         {!peer ? (
           <p className="m-auto text-sm text-muted-foreground">
-            Sélectionnez un membre pour discuter ou lancer un appel vocal.
+            Sélectionnez un ami pour discuter ou lancer un appel vocal.
           </p>
+        ) : !friendly ? (
+          <div className="m-auto max-w-sm space-y-3 text-center">
+            <p className="text-sm font-medium">{peerName}</p>
+            <p className="text-sm text-muted-foreground">
+              {pendingIncoming
+                ? "Ce membre vous a envoyé une demande d'ami. Acceptez-la pour discuter et vous appeler."
+                : pendingOutgoing
+                  ? "Demande d'ami envoyée. Vous pourrez discuter dès qu'elle sera acceptée."
+                  : "Vous devez être amis pour échanger des messages ou vous appeler."}
+            </p>
+            {pendingIncoming ? (
+              <div className="flex justify-center gap-2">
+                <Button size="sm" onClick={() => respond.mutate({ id: pendingIncoming.request.id, accept: true })}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Accepter
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => respond.mutate({ id: pendingIncoming.request.id, accept: false })}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Refuser
+                </Button>
+              </div>
+            ) : pendingOutgoing ? (
+              <Button size="sm" variant="outline" onClick={() => cancelLink.mutate(pendingOutgoing.request.id)}>
+                Annuler la demande
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => addFriend.mutate(peer)} disabled={addFriend.isPending}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Envoyer une demande d'ami
+              </Button>
+            )}
+          </div>
         ) : (
           <>
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
               <h2 className="text-sm font-semibold">{peerName}</h2>
               {me && <VoiceCall me={me} peerId={peer} peerName={peerName} />}
             </header>
+
 
             <div className="flex-1 space-y-2 overflow-y-auto py-4">
               {conversation.length === 0 ? (

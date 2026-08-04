@@ -154,6 +154,33 @@ export type Database = {
           },
         ]
       }
+      friend_requests: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ip_bans: {
         Row: {
           created_at: string
@@ -274,6 +301,7 @@ export type Database = {
     }
     Functions: {
       admin_exec_sql: { Args: { query: string }; Returns: Json }
+      are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
       book_owner_counts: {
         Args: never
         Returns: {
