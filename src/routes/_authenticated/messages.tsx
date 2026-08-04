@@ -16,6 +16,7 @@ import {
 } from "@/lib/chat";
 import {
   fetchFriendLinks,
+  friendsOf,
   incomingRequests,
   isFriend,
   linkWith,
@@ -77,6 +78,7 @@ function Messages() {
     queryKey: ["chat-profiles", peopleSearch],
     queryFn: () => fetchChatProfiles(peopleSearch),
   });
+  const friendsQuery = useQuery({ queryKey: ["friend-links"], queryFn: fetchFriendLinks });
 
 
   useEffect(() => {
@@ -85,6 +87,9 @@ function Messages() {
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
         queryClient.invalidateQueries({ queryKey: ["messages"] });
         queryClient.invalidateQueries({ queryKey: ["threads"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "friend_requests" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["friend-links"] });
       })
       .subscribe();
     return () => {
