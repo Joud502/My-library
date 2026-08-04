@@ -13,6 +13,8 @@ import {
 } from "@/lib/chat";
 import { getUserId, profileLabel, type Profile } from "@/lib/profile";
 import { startRingTone } from "@/lib/call-sounds";
+import { Button } from "@/components/ui/button";
+
 
 async function peerName(id: string) {
   const { data } = await supabase
