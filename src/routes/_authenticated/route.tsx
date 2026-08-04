@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -51,6 +52,7 @@ function AuthenticatedLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-surface">
+      <NotificationCenter />
       <header className="border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
           <Link to="/mon-album" className="flex items-center gap-2">
