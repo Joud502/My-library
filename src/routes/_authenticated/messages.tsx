@@ -109,10 +109,45 @@ function Messages() {
   }, [conversation.length]);
 
   const threads = threadsQuery.data ?? [];
+  const links = friendsQuery.data ?? [];
+  const friends = friendsOf(links);
+  const pendingIn = incomingRequests(links);
+  const pendingOut = outgoingRequests(links);
   const people = (peopleQuery.data ?? []).filter((p) => p.id !== me);
   const peerProfile =
-    threads.find((t) => t.peerId === peer)?.peer ?? people.find((p) => p.id === peer) ?? null;
+    threads.find((t) => t.peerId === peer)?.peer ??
+    links.find((l) => l.peerId === peer)?.peer ??
+    people.find((p) => p.id === peer) ??
+    null;
   const peerName = peerProfile ? profileLabel(peerProfile) : "ce membre";
+  const friendly = peer ? isFriend(links, peer) : false;
+  const pendingIncoming = peer ? (pendingIn.find((l) => l.peerId === peer) ?? null) : null;
+  const pendingOutgoing = peer ? (pendingOut.find((l) => l.peerId === peer) ?? null) : null;
+
+  const addFriend = useMutation({
+    mutationFn: (peerId: string) => sendFriendRequest(peerId),
+    onSuccess: () => {
+      toast.success("Demande d'ami envoyée");
+      queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+    },
+    onError: (error) => toast.error("Demande impossible", { description: error.message }),
+  });
+
+  const respond = useMutation({
+    mutationFn: ({ id, accept }: { id: string; accept: boolean }) => respondFriendRequest(id, accept),
+    onSuccess: (_data, variables) => {
+      toast.success(variables.accept ? "Demande acceptée" : "Demande refusée");
+      queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+    },
+    onError: (error) => toast.error("Action impossible", { description: error.message }),
+  });
+
+  const cancelLink = useMutation({
+    mutationFn: (id: string) => removeFriendLink(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["friend-links"] }),
+    onError: (error) => toast.error("Action impossible", { description: error.message }),
+  });
+
 
 
   const send = useMutation({
