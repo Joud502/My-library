@@ -228,14 +228,51 @@ function Messages() {
       <section className="flex min-h-[60vh] flex-col rounded-xl bg-card p-4 shadow-card">
         {!peer ? (
           <p className="m-auto text-sm text-muted-foreground">
-            Sélectionnez un membre pour discuter ou lancer un appel vocal.
+            Sélectionnez un ami pour discuter ou lancer un appel vocal.
           </p>
+        ) : !friendly ? (
+          <div className="m-auto max-w-sm space-y-3 text-center">
+            <p className="text-sm font-medium">{peerName}</p>
+            <p className="text-sm text-muted-foreground">
+              {pendingIncoming
+                ? "Ce membre vous a envoyé une demande d'ami. Acceptez-la pour discuter et vous appeler."
+                : pendingOutgoing
+                  ? "Demande d'ami envoyée. Vous pourrez discuter dès qu'elle sera acceptée."
+                  : "Vous devez être amis pour échanger des messages ou vous appeler."}
+            </p>
+            {pendingIncoming ? (
+              <div className="flex justify-center gap-2">
+                <Button size="sm" onClick={() => respond.mutate({ id: pendingIncoming.request.id, accept: true })}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Accepter
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => respond.mutate({ id: pendingIncoming.request.id, accept: false })}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Refuser
+                </Button>
+              </div>
+            ) : pendingOutgoing ? (
+              <Button size="sm" variant="outline" onClick={() => cancelLink.mutate(pendingOutgoing.request.id)}>
+                Annuler la demande
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => addFriend.mutate(peer)} disabled={addFriend.isPending}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Envoyer une demande d'ami
+              </Button>
+            )}
+          </div>
         ) : (
           <>
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
               <h2 className="text-sm font-semibold">{peerName}</h2>
               {me && <VoiceCall me={me} peerId={peer} peerName={peerName} />}
             </header>
+
 
             <div className="flex-1 space-y-2 overflow-y-auto py-4">
               {conversation.length === 0 ? (
