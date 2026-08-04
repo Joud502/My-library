@@ -187,6 +187,58 @@ function Messages() {
           </ul>
         )}
 
+        {pendingIn.length > 0 && (
+          <div className="space-y-2 border-t border-border pt-3">
+            <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Demandes d'ami
+            </p>
+            <ul className="space-y-1">
+              {pendingIn.map((link) => (
+                <li key={link.request.id} className="flex items-center gap-1 rounded-lg px-2 py-1">
+                  <span className="flex-1 truncate text-sm">{profileLabel(link.peer)}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Accepter"
+                    onClick={() => respond.mutate({ id: link.request.id, accept: true })}
+                  >
+                    <Check className="h-4 w-4 text-primary" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Refuser"
+                    onClick={() => respond.mutate({ id: link.request.id, accept: false })}
+                  >
+                    <X className="h-4 w-4 text-destructive" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {friends.length > 0 && (
+          <div className="space-y-1 border-t border-border pt-3">
+            <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Mes amis
+            </p>
+            {friends.map((link) => (
+              <button
+                key={link.request.id}
+                type="button"
+                onClick={() => openPeer(link.peerId)}
+                className={cn(
+                  "w-full truncate rounded-lg px-3 py-1.5 text-left text-sm transition-colors hover:bg-secondary",
+                  peer === link.peerId && "bg-primary text-primary-foreground hover:bg-primary",
+                )}
+              >
+                {profileLabel(link.peer)}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-2 border-t border-border pt-3">
           <form
             className="relative"
@@ -209,20 +261,39 @@ function Messages() {
             <p className="px-1 text-xs text-muted-foreground">Aucun membre trouvé.</p>
           )}
           <ul className="space-y-1">
-            {people.slice(0, 8).map((profile) => (
-              <li key={profile.id}>
-                <button
-                  type="button"
-                  onClick={() => openPeer(profile.id)}
-                  className="w-full truncate rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary"
-                >
-                  {profileLabel(profile)}
-                </button>
-              </li>
-            ))}
+            {people.slice(0, 8).map((profile) => {
+              const link = linkWith(links, profile.id);
+              return (
+                <li key={profile.id} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => openPeer(profile.id)}
+                    className="flex-1 truncate rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary"
+                  >
+                    {profileLabel(profile)}
+                  </button>
+                  {link?.request.status === "accepted" ? (
+                    <span className="px-1 text-[11px] text-muted-foreground">Ami</span>
+                  ) : link?.request.status === "pending" ? (
+                    <span className="px-1 text-[11px] text-muted-foreground">
+                      {link.outgoing ? "Envoyée" : "Reçue"}
+                    </span>
+                  ) : (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Envoyer une demande d'ami"
+                      onClick={() => addFriend.mutate(profile.id)}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
-
         </div>
+
       </aside>
 
       <section className="flex min-h-[60vh] flex-col rounded-xl bg-card p-4 shadow-card">
