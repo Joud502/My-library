@@ -3,7 +3,7 @@ import { Mic, MicOff, Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { pairChannel } from "@/lib/chat";
+import { pairChannel, userCallChannel } from "@/lib/chat";
 import { playCallEnd, playCallStart, startRingTone } from "@/lib/call-sounds";
 import { Button } from "@/components/ui/button";
 
@@ -20,8 +20,11 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
   const localRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
+  const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
+  const remoteReady = useRef(false);
   const stopRingRef = useRef<(() => void) | null>(null);
   const stateRef = useRef<CallState>("idle");
+  const lastOffer = useRef<RTCSessionDescriptionInit | null>(null);
 
   function stopRing() {
     stopRingRef.current?.();
@@ -41,11 +44,28 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
     localRef.current?.getTracks().forEach((t) => t.stop());
     localRef.current = null;
     pendingOffer.current = null;
+    pendingCandidates.current = [];
+    remoteReady.current = false;
+    lastOffer.current = null;
     setMuted(false);
     goTo("idle");
     if (wasActive && !silent) playCallEnd();
   }
 
+  /** Applique les candidats ICE mis en attente une fois la description distante posée. */
+  async function flushCandidates() {
+    const pc = pcRef.current;
+    if (!pc || !remoteReady.current) return;
+    const queued = pendingCandidates.current;
+    pendingCandidates.current = [];
+    for (const candidate of queued) {
+      try {
+        await pc.addIceCandidate(candidate);
+      } catch {
+        /* candidat ignoré */
+      }
+    }
+  }
 
   async function createPeer() {
     const pc = new RTCPeerConnection(ICE);
@@ -81,22 +101,38 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
     channel
       .on("broadcast", { event: "offer" }, ({ payload }) => {
         if (payload.from === me) return;
+        if (stateRef.current === "in-call" || stateRef.current === "calling") return;
         pendingOffer.current = payload.sdp as RTCSessionDescriptionInit;
         goTo("ringing");
         stopRing();
         stopRingRef.current = startRingTone("incoming");
       })
+      .on("broadcast", { event: "join" }, ({ payload }) => {
+        // Le correspondant vient d'ouvrir la conversation : on lui renvoie l'offre en cours.
+        if (payload.from === me) return;
+        if (stateRef.current === "calling" && lastOffer.current) {
+          send("offer", { sdp: lastOffer.current });
+        }
+      })
       .on("broadcast", { event: "answer" }, async ({ payload }) => {
         if (payload.from === me || !pcRef.current) return;
         await pcRef.current.setRemoteDescription(payload.sdp as RTCSessionDescriptionInit);
+        remoteReady.current = true;
+        await flushCandidates();
         stopRing();
         playCallStart();
         goTo("in-call");
       })
       .on("broadcast", { event: "ice" }, async ({ payload }) => {
-        if (payload.from === me || !pcRef.current) return;
+        if (payload.from === me) return;
+        const candidate = payload.candidate as RTCIceCandidateInit;
+        // Tant que la description distante n'est pas posée, on met les candidats en file.
+        if (!pcRef.current || !remoteReady.current) {
+          pendingCandidates.current.push(candidate);
+          return;
+        }
         try {
-          await pcRef.current.addIceCandidate(payload.candidate as RTCIceCandidateInit);
+          await pcRef.current.addIceCandidate(candidate);
         } catch {
           /* candidat ignoré */
         }
@@ -105,7 +141,9 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
         if (payload.from === me) return;
         cleanup();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") send("join", {});
+      });
 
     return () => {
       cleanup(true);
@@ -120,7 +158,16 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
       const pc = await createPeer();
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      lastOffer.current = offer;
       send("offer", { sdp: offer });
+      // Notification globale côté correspondant (même s'il n'a pas la conversation ouverte).
+      const ring = supabase.channel(userCallChannel(peerId));
+      ring.subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        void ring
+          .send({ type: "broadcast", event: "ring", payload: { from: me, name: "" } })
+          .then(() => setTimeout(() => supabase.removeChannel(ring), 500));
+      });
       goTo("calling");
       playCallStart();
       stopRing();
@@ -136,6 +183,8 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
     try {
       const pc = await createPeer();
       await pc.setRemoteDescription(pendingOffer.current);
+      remoteReady.current = true;
+      await flushCandidates();
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       send("answer", { sdp: answer });
@@ -147,7 +196,6 @@ export function VoiceCall({ me, peerId, peerName }: { me: string; peerId: string
       cleanup();
     }
   }
-
 
   function hangup() {
     send("hangup", {});

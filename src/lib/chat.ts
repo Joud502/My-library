@@ -87,6 +87,35 @@ export function pairChannel(prefix: string, a: string, b: string) {
   return `${prefix}-${[a, b].sort().join("-")}`;
 }
 
+/** Canal personnel d'un utilisateur pour recevoir les sonneries d'appel. */
+export function userCallChannel(userId: string) {
+  return `call-inbox-${userId}`;
+}
+
+const MUTE_KEY = "chat-muted-peers";
+
+function muteMap(): Record<string, number> {
+  if (typeof localStorage === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(MUTE_KEY) ?? "{}") as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+/** Coupe les notifications d'un membre pour une durée donnée (en minutes). */
+export function mutePeer(peerId: string, minutes = 60) {
+  const map = muteMap();
+  map[peerId] = Date.now() + minutes * 60_000;
+  localStorage.setItem(MUTE_KEY, JSON.stringify(map));
+}
+
+export function isPeerMuted(peerId: string) {
+  const until = muteMap()[peerId];
+  return typeof until === "number" && until > Date.now();
+}
+
+
 const FILE_PREFIX = "::file::";
 
 export type Attachment = { path: string; name: string };
