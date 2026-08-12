@@ -1,5 +1,6 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme, type Theme } from "@/lib/theme";
+import { ThemeFxButtons } from "@/components/ThemeFxButtons";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
@@ -12,14 +13,13 @@ export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
 
   return (
+    <div className={cn("inline-flex items-center gap-2", className)}>
     <div
       role="radiogroup"
       aria-label="Thème de l'interface"
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-card",
-        className,
-      )}
+      className="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-card"
     >
+
       {OPTIONS.map(({ value, label, icon: Icon }) => (
         <button
           key={value}
