@@ -40,5 +40,8 @@ export function ThemeToggle({ className }: { className?: string }) {
         </button>
       ))}
     </div>
+      <ThemeFxButtons />
+    </div>
+
   );
 }
