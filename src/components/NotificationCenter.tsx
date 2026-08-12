@@ -15,6 +15,12 @@ import { getUserId, profileLabel, type Profile } from "@/lib/profile";
 import { startRingTone } from "@/lib/call-sounds";
 import { fetchFriendLinks, isFriend, respondFriendRequest } from "@/lib/friends";
 import { Button } from "@/components/ui/button";
+import {
+  notificationsSupported,
+  requestNotificationPermission,
+  systemNotify,
+} from "@/lib/system-notifications";
+
 
 
 async function peerName(id: string) {
