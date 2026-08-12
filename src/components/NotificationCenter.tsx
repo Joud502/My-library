@@ -134,7 +134,13 @@ export function NotificationCenter() {
             const preview = parseAttachment(message.content)
               ? "📎 Pièce jointe"
               : message.content.slice(0, 80);
+            systemNotify(`Message de ${name}`, {
+              body: preview,
+              tag: `msg-${message.sender_id}`,
+              onClick: () => void navigate({ to: "/messages", search: { peer: message.sender_id } }),
+            });
             toast.custom(
+
               (id) => (
                 <div className="w-[340px] rounded-xl border border-border bg-card p-4 shadow-card">
                   <p className="text-sm font-semibold">Message de {name}</p>
