@@ -46,6 +46,24 @@ export function NotificationCenter() {
       if (!me || cancelled) return;
       meRef.current = me;
 
+      // Toute personne connectée doit accepter (ou refuser) les notifications système.
+      if (notificationsSupported() && Notification.permission === "default") {
+        const askId = toast("Activer les notifications système ?", {
+          duration: 60000,
+          description: "Recevez les appels et messages même quand l'onglet est en arrière-plan.",
+          action: {
+            label: "Autoriser",
+            onClick: () => {
+              void requestNotificationPermission(true).then((p) => {
+                if (p === "granted") toast.success("Notifications système activées.");
+                else if (p === "denied") toast.error("Notifications bloquées par le navigateur.");
+              });
+            },
+          },
+          cancel: { label: "Plus tard", onClick: () => toast.dismiss(askId) },
+        });
+      }
+
       const callChannel = supabase
         .channel(userCallChannel(me))
         .on("broadcast", { event: "ring" }, async ({ payload }) => {
@@ -55,6 +73,17 @@ export function NotificationCenter() {
           if (!isFriend(await fetchFriendLinks(), from)) return;
           const name = await peerName(from);
           const stopRing = startRingTone("incoming");
+          const sysCall = systemNotify(`${name} vous appelle`, {
+            body: "Cliquez pour répondre.",
+            tag: `call-${from}`,
+            requireInteraction: true,
+            onClick: () => {
+              stopRing();
+              void navigate({ to: "/messages", search: { peer: from } });
+            },
+          });
+          setTimeout(() => sysCall?.close(), 30000);
+
           const id = toast(`${name} vous appelle`, {
             description: "Répondre ou raccrocher ?",
             duration: 30000,
