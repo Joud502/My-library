@@ -169,3 +169,44 @@
 @utility shadow-elevated {
   box-shadow: var(--shadow-elevated);
 }
+
+@keyframes fx-nuke-flash {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  55% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes fx-nuke-ring {
+  0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(22); opacity: 0; }
+}
+
+@keyframes fx-tnt-blast {
+  0% { transform: translate(-50%, -50%) scale(0.05); opacity: 1; }
+  45% { transform: translate(-50%, -50%) scale(3.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+}
+
+@keyframes fx-tnt-rock {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate(var(--rock-drift, 0px), 130vh) rotate(var(--rock-rotate, 360deg)); opacity: 1; }
+}
+
+@keyframes fx-tnt-dust {
+  0% { opacity: 0; }
+  45% { opacity: 0; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.fx-nuke-flash { animation: fx-nuke-flash 1.5s ease-out forwards; }
+.fx-nuke-ring { animation: fx-nuke-ring 1.2s ease-out forwards; }
+.fx-tnt-blast { animation: fx-tnt-blast 1s ease-out forwards; }
+.fx-tnt-rock { animation: fx-tnt-rock 1.6s cubic-bezier(0.4, 0, 0.8, 0.6) forwards; }
+.fx-tnt-dust { animation: fx-tnt-dust 2.4s ease-in-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-nuke-flash, .fx-nuke-ring, .fx-tnt-blast, .fx-tnt-rock, .fx-tnt-dust { animation-duration: 0.2s; }
+}
