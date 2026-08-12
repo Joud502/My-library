@@ -15,6 +15,12 @@ import { getUserId, profileLabel, type Profile } from "@/lib/profile";
 import { startRingTone } from "@/lib/call-sounds";
 import { fetchFriendLinks, isFriend, respondFriendRequest } from "@/lib/friends";
 import { Button } from "@/components/ui/button";
+import {
+  notificationsSupported,
+  requestNotificationPermission,
+  systemNotify,
+} from "@/lib/system-notifications";
+
 
 
 async function peerName(id: string) {
@@ -40,6 +46,24 @@ export function NotificationCenter() {
       if (!me || cancelled) return;
       meRef.current = me;
 
+      // Toute personne connectée doit accepter (ou refuser) les notifications système.
+      if (notificationsSupported() && Notification.permission === "default") {
+        const askId = toast("Activer les notifications système ?", {
+          duration: 60000,
+          description: "Recevez les appels et messages même quand l'onglet est en arrière-plan.",
+          action: {
+            label: "Autoriser",
+            onClick: () => {
+              void requestNotificationPermission(true).then((p) => {
+                if (p === "granted") toast.success("Notifications système activées.");
+                else if (p === "denied") toast.error("Notifications bloquées par le navigateur.");
+              });
+            },
+          },
+          cancel: { label: "Plus tard", onClick: () => toast.dismiss(askId) },
+        });
+      }
+
       const callChannel = supabase
         .channel(userCallChannel(me))
         .on("broadcast", { event: "ring" }, async ({ payload }) => {
@@ -49,6 +73,17 @@ export function NotificationCenter() {
           if (!isFriend(await fetchFriendLinks(), from)) return;
           const name = await peerName(from);
           const stopRing = startRingTone("incoming");
+          const sysCall = systemNotify(`${name} vous appelle`, {
+            body: "Cliquez pour répondre.",
+            tag: `call-${from}`,
+            requireInteraction: true,
+            onClick: () => {
+              stopRing();
+              void navigate({ to: "/messages", search: { peer: from } });
+            },
+          });
+          setTimeout(() => sysCall?.close(), 30000);
+
           const id = toast(`${name} vous appelle`, {
             description: "Répondre ou raccrocher ?",
             duration: 30000,
@@ -99,7 +134,13 @@ export function NotificationCenter() {
             const preview = parseAttachment(message.content)
               ? "📎 Pièce jointe"
               : message.content.slice(0, 80);
+            systemNotify(`Message de ${name}`, {
+              body: preview,
+              tag: `msg-${message.sender_id}`,
+              onClick: () => void navigate({ to: "/messages", search: { peer: message.sender_id } }),
+            });
             toast.custom(
+
               (id) => (
                 <div className="w-[340px] rounded-xl border border-border bg-card p-4 shadow-card">
                   <p className="text-sm font-semibold">Message de {name}</p>
@@ -161,7 +202,13 @@ export function NotificationCenter() {
             const request = row as { id: string; requester_id: string };
             const name = await peerName(request.requester_id);
             queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+            systemNotify(`${name} veut devenir votre ami`, {
+              body: "Ouvrez la messagerie pour accepter ou refuser.",
+              tag: `friend-${request.id}`,
+              onClick: () => void navigate({ to: "/messages", search: {} }),
+            });
             toast(`${name} veut devenir votre ami`, {
+
               duration: 30000,
               action: {
                 label: "Accepter",
