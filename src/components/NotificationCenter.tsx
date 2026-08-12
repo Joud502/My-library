@@ -202,7 +202,13 @@ export function NotificationCenter() {
             const request = row as { id: string; requester_id: string };
             const name = await peerName(request.requester_id);
             queryClient.invalidateQueries({ queryKey: ["friend-links"] });
+            systemNotify(`${name} veut devenir votre ami`, {
+              body: "Ouvrez la messagerie pour accepter ou refuser.",
+              tag: `friend-${request.id}`,
+              onClick: () => void navigate({ to: "/messages", search: {} }),
+            });
             toast(`${name} veut devenir votre ami`, {
+
               duration: 30000,
               action: {
                 label: "Accepter",
