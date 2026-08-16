@@ -1,10 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Eye, EyeOff, Loader2, MessageCircle } from "lucide-react";
+import { BellOff, Check, Copy, Eye, EyeOff, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { fetchMyProfile, isUsernameAvailable, updateMyProfile } from "@/lib/profile";
+import { supabase } from "@/integrations/supabase/client";
+import { listMutedPeers, unmutePeer } from "@/lib/chat";
+import {
+  fetchMyProfile,
+  isUsernameAvailable,
+  profileLabel,
+  updateMyProfile,
+  type Profile,
+} from "@/lib/profile";
 import { languageError } from "@/lib/language-filter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
