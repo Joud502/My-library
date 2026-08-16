@@ -150,16 +150,26 @@ export function NotificationCenter() {
           if (!isFriend(await fetchFriendLinks(), from)) return;
           const name = await peerName(from);
           const stopRing = startRingTone("incoming");
+          ringStops.current.set(from, stopRing);
           const sysCall = systemNotify(`${name} vous appelle`, {
-            body: "Cliquez pour répondre.",
+            body: "Appel entrant — répondre ou raccrocher ?",
             tag: `call-${from}`,
             requireInteraction: true,
+            actions: [
+              { action: "answer", title: "Répondre" },
+              { action: "hangup", title: "Raccrocher" },
+            ],
+            data: { kind: "call", peerId: from, url: `/messages?peer=${from}` },
             onClick: () => {
               stopRing();
               void navigate({ to: "/messages", search: { peer: from } });
             },
           });
-          setTimeout(() => sysCall?.close(), 30000);
+          setTimeout(() => {
+            sysCall?.close();
+            void closeSystemNotifications(`call-${from}`);
+            stopRingFor(from);
+          }, 30000);
 
           const id = toast(`${name} vous appelle`, {
             description: "Répondre ou raccrocher ?",
