@@ -224,6 +224,16 @@ export function NotificationCenter() {
             systemNotify(`Message de ${name}`, {
               body: preview,
               tag: `msg-${message.sender_id}`,
+              actions: [
+                { action: "reply", title: "Répondre" },
+                { action: "read", title: "Marquer comme lu" },
+                { action: "mute", title: "Muet 1 h" },
+              ],
+              data: {
+                kind: "message",
+                peerId: message.sender_id,
+                url: `/messages?peer=${message.sender_id}`,
+              },
               onClick: () => void navigate({ to: "/messages", search: { peer: message.sender_id } }),
             });
             toast.custom(
