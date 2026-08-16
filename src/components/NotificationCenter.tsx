@@ -37,6 +37,80 @@ export function NotificationCenter() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const meRef = useRef<string | null>(null);
+  const ringStops = useRef(new Map<string, () => void>());
+
+  const stopRingFor = (peerId: string) => {
+    ringStops.current.get(peerId)?.();
+    ringStops.current.delete(peerId);
+  };
+
+  const hangUp = (peerId: string) => {
+    const me = meRef.current;
+    if (!me) return;
+    const hang = supabase.channel(pairChannel("call", me, peerId));
+    hang.subscribe((status) => {
+      if (status !== "SUBSCRIBED") return;
+      void hang
+        .send({ type: "broadcast", event: "hangup", payload: { from: me } })
+        .then(() => setTimeout(() => supabase.removeChannel(hang), 500));
+    });
+  };
+
+  // Actions déclenchées depuis les boutons des notifications système.
+  useEffect(() => {
+    const run = async (action: string, data: NotificationData) => {
+      const peerId = data.peerId;
+      if (!peerId) return;
+      if (data.kind === "call") {
+        stopRingFor(peerId);
+        if (action === "hangup") {
+          hangUp(peerId);
+          return;
+        }
+        void navigate({ to: "/messages", search: { peer: peerId } });
+        return;
+      }
+      if (data.kind === "message") {
+        if (action === "read") {
+          await markThreadRead(peerId);
+          queryClient.invalidateQueries({ queryKey: ["threads"] });
+          queryClient.invalidateQueries({ queryKey: ["messages"] });
+          toast.success("Conversation marquée comme lue.");
+          return;
+        }
+        if (action === "mute") {
+          mutePeer(peerId, 60);
+          toast.success("Notifications coupées pendant 1 heure.");
+          return;
+        }
+        void navigate({ to: "/messages", search: { peer: peerId } });
+        return;
+      }
+      void navigate({ to: "/messages", search: {} });
+    };
+
+    const off = onNotificationAction((action, data) => void run(action, data));
+
+    // Cas « site fermé » : le worker rouvre le site avec l'action en paramètre.
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get("na");
+      const peer = params.get("peer");
+      if (action && peer) {
+        void run(action, { kind: action === "hangup" ? "call" : "message", peerId: peer });
+        params.delete("na");
+        const query = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          `${window.location.pathname}${query ? `?${query}` : ""}`,
+        );
+      }
+    }
+
+    return off;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, queryClient]);
 
   useEffect(() => {
     let cancelled = false;
