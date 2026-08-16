@@ -16,9 +16,12 @@ import { startRingTone } from "@/lib/call-sounds";
 import { fetchFriendLinks, isFriend, respondFriendRequest } from "@/lib/friends";
 import { Button } from "@/components/ui/button";
 import {
+  closeSystemNotifications,
   notificationsSupported,
+  onNotificationAction,
   requestNotificationPermission,
   systemNotify,
+  type NotificationData,
 } from "@/lib/system-notifications";
 
 
