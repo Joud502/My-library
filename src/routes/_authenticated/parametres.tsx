@@ -1,10 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Eye, EyeOff, Loader2, MessageCircle } from "lucide-react";
+import { BellOff, Check, Copy, Eye, EyeOff, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { fetchMyProfile, isUsernameAvailable, updateMyProfile } from "@/lib/profile";
+import { supabase } from "@/integrations/supabase/client";
+import { listMutedPeers, unmutePeer } from "@/lib/chat";
+import {
+  fetchMyProfile,
+  isUsernameAvailable,
+  profileLabel,
+  updateMyProfile,
+  type Profile,
+} from "@/lib/profile";
 import { languageError } from "@/lib/language-filter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,6 +186,67 @@ function Parametres() {
           </div>
         )}
       </section>
+
+      <MutedPeers />
     </div>
+  );
+}
+
+/** Membres dont les notifications sont coupées temporairement. */
+function MutedPeers() {
+  const [muted, setMuted] = useState(listMutedPeers());
+  const peersQuery = useQuery({
+    queryKey: ["muted-peer-profiles", muted.map((m) => m.peerId).join(",")],
+    queryFn: async () => {
+      if (!muted.length) return [] as Profile[];
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, username, is_public, allow_chat, created_at")
+        .in(
+          "id",
+          muted.map((m) => m.peerId),
+        );
+      return (data ?? []) as Profile[];
+    },
+  });
+
+  if (!muted.length) return null;
+
+  return (
+    <section className="mt-6 space-y-4 rounded-2xl bg-card p-6 shadow-card">
+      <div className="flex items-center gap-2">
+        <BellOff className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">Membres en sourdine</h2>
+      </div>
+      <ul className="space-y-2">
+        {muted.map((entry) => {
+          const peer = peersQuery.data?.find((p) => p.id === entry.peerId) ?? null;
+          return (
+            <li
+              key={entry.peerId}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm"
+            >
+              <span>
+                {profileLabel(peer)}
+                <span className="block text-xs text-muted-foreground">
+                  Jusqu'à {new Date(entry.until).toLocaleTimeString("fr-FR")}
+                </span>
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  unmutePeer(entry.peerId);
+                  setMuted(listMutedPeers());
+                  toast.success("Notifications réactivées.");
+                }}
+              >
+                Réactiver
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

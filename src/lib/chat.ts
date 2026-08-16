@@ -115,6 +115,22 @@ export function isPeerMuted(peerId: string) {
   return typeof until === "number" && until > Date.now();
 }
 
+/** Liste des membres actuellement en sourdine, avec la fin de la sourdine. */
+export function listMutedPeers(): { peerId: string; until: number }[] {
+  const now = Date.now();
+  return Object.entries(muteMap())
+    .filter(([, until]) => typeof until === "number" && until > now)
+    .map(([peerId, until]) => ({ peerId, until }))
+    .sort((a, b) => a.until - b.until);
+}
+
+/** Réactive les notifications d'un membre. */
+export function unmutePeer(peerId: string) {
+  const map = muteMap();
+  delete map[peerId];
+  localStorage.setItem(MUTE_KEY, JSON.stringify(map));
+}
+
 
 const FILE_PREFIX = "::file::";
 

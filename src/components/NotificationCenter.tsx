@@ -16,9 +16,12 @@ import { startRingTone } from "@/lib/call-sounds";
 import { fetchFriendLinks, isFriend, respondFriendRequest } from "@/lib/friends";
 import { Button } from "@/components/ui/button";
 import {
+  closeSystemNotifications,
   notificationsSupported,
+  onNotificationAction,
   requestNotificationPermission,
   systemNotify,
+  type NotificationData,
 } from "@/lib/system-notifications";
 
 
@@ -37,6 +40,80 @@ export function NotificationCenter() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const meRef = useRef<string | null>(null);
+  const ringStops = useRef(new Map<string, () => void>());
+
+  const stopRingFor = (peerId: string) => {
+    ringStops.current.get(peerId)?.();
+    ringStops.current.delete(peerId);
+  };
+
+  const hangUp = (peerId: string) => {
+    const me = meRef.current;
+    if (!me) return;
+    const hang = supabase.channel(pairChannel("call", me, peerId));
+    hang.subscribe((status) => {
+      if (status !== "SUBSCRIBED") return;
+      void hang
+        .send({ type: "broadcast", event: "hangup", payload: { from: me } })
+        .then(() => setTimeout(() => supabase.removeChannel(hang), 500));
+    });
+  };
+
+  // Actions déclenchées depuis les boutons des notifications système.
+  useEffect(() => {
+    const run = async (action: string, data: NotificationData) => {
+      const peerId = data.peerId;
+      if (!peerId) return;
+      if (data.kind === "call") {
+        stopRingFor(peerId);
+        if (action === "hangup") {
+          hangUp(peerId);
+          return;
+        }
+        void navigate({ to: "/messages", search: { peer: peerId } });
+        return;
+      }
+      if (data.kind === "message") {
+        if (action === "read") {
+          await markThreadRead(peerId);
+          queryClient.invalidateQueries({ queryKey: ["threads"] });
+          queryClient.invalidateQueries({ queryKey: ["messages"] });
+          toast.success("Conversation marquée comme lue.");
+          return;
+        }
+        if (action === "mute") {
+          mutePeer(peerId, 60);
+          toast.success("Notifications coupées pendant 1 heure.");
+          return;
+        }
+        void navigate({ to: "/messages", search: { peer: peerId } });
+        return;
+      }
+      void navigate({ to: "/messages", search: {} });
+    };
+
+    const off = onNotificationAction((action, data) => void run(action, data));
+
+    // Cas « site fermé » : le worker rouvre le site avec l'action en paramètre.
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get("na");
+      const peer = params.get("peer");
+      if (action && peer) {
+        void run(action, { kind: action === "hangup" ? "call" : "message", peerId: peer });
+        params.delete("na");
+        const query = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          `${window.location.pathname}${query ? `?${query}` : ""}`,
+        );
+      }
+    }
+
+    return off;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, queryClient]);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,16 +150,26 @@ export function NotificationCenter() {
           if (!isFriend(await fetchFriendLinks(), from)) return;
           const name = await peerName(from);
           const stopRing = startRingTone("incoming");
+          ringStops.current.set(from, stopRing);
           const sysCall = systemNotify(`${name} vous appelle`, {
-            body: "Cliquez pour répondre.",
+            body: "Appel entrant — répondre ou raccrocher ?",
             tag: `call-${from}`,
             requireInteraction: true,
+            actions: [
+              { action: "answer", title: "Répondre" },
+              { action: "hangup", title: "Raccrocher" },
+            ],
+            data: { kind: "call", peerId: from, url: `/messages?peer=${from}` },
             onClick: () => {
               stopRing();
               void navigate({ to: "/messages", search: { peer: from } });
             },
           });
-          setTimeout(() => sysCall?.close(), 30000);
+          setTimeout(() => {
+            sysCall?.close();
+            void closeSystemNotifications(`call-${from}`);
+            stopRingFor(from);
+          }, 30000);
 
           const id = toast(`${name} vous appelle`, {
             description: "Répondre ou raccrocher ?",
@@ -137,6 +224,16 @@ export function NotificationCenter() {
             systemNotify(`Message de ${name}`, {
               body: preview,
               tag: `msg-${message.sender_id}`,
+              actions: [
+                { action: "reply", title: "Répondre" },
+                { action: "read", title: "Marquer comme lu" },
+                { action: "mute", title: "Muet 1 h" },
+              ],
+              data: {
+                kind: "message",
+                peerId: message.sender_id,
+                url: `/messages?peer=${message.sender_id}`,
+              },
               onClick: () => void navigate({ to: "/messages", search: { peer: message.sender_id } }),
             });
             toast.custom(
