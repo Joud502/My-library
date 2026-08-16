@@ -96,7 +96,7 @@ export function systemNotify(title: string, options: SystemNotifyOptions = {}) {
     const reg = await ensureNotificationWorker();
     if (!reg) return;
     try {
-      await reg.showNotification(title, payload);
+      await reg.showNotification(title, payload as unknown as NotificationOptions);
     } catch {
       /* ignoré : repli ci-dessous */
     }
