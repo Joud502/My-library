@@ -302,6 +302,7 @@ export type Database = {
     Functions: {
       admin_exec_sql: { Args: { query: string }; Returns: Json }
       are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
+      book_norm: { Args: { txt: string }; Returns: string }
       book_owner_counts: {
         Args: never
         Returns: {
@@ -309,6 +310,7 @@ export type Database = {
           title_key: string
         }[]
       }
+      unaccent_safe: { Args: { txt: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
