@@ -61,8 +61,22 @@ export async function fetchOwnerCounts(): Promise<Record<string, number>> {
   return map;
 }
 
-export function titleKey(title: string) {
-  return title.trim().toLowerCase();
+/** Normalisation d'un texte : minuscules, sans accents ni ponctuation. */
+function norm(txt: string) {
+  return txt
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Deux livres sont « les mêmes » s'ils partagent titre + auteur normalisés.
+ * La description, la couverture ou l'année n'entrent pas dans la comparaison.
+ */
+export function titleKey(title: string, author = "") {
+  return `${norm(title)}|${norm(author)}`;
 }
 
 export async function deleteBook(id: string) {
