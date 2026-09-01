@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Layers, Plus, Search, Trash2, Users } from "lucide-react";
+import { BookOpen, Download, Layers, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
+import { findFreeRead } from "@/lib/book-lookup";
+import { useLanguage } from "@/lib/i18n";
 import {
   deleteBook,
   deleteSerie,
