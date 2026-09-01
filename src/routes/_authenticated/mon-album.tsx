@@ -73,8 +73,37 @@ function MonAlbum() {
   const booksQuery = useQuery({ queryKey: ["books"], queryFn: fetchBooks });
   const seriesQuery = useQuery({ queryKey: ["series"], queryFn: fetchSeries });
   const ownersQuery = useQuery({ queryKey: ["owner-counts"], queryFn: fetchOwnerCounts });
-  const othersFor = (title: string) =>
-    Math.max((ownersQuery.data?.[titleKey(title)] ?? 1) - 1, 0);
+  const othersFor = (book: Book) =>
+    Math.max((ownersQuery.data?.[titleKey(book.title, book.author)] ?? 1) - 1, 0);
+
+  const { t } = useLanguage();
+  const [reading, setReading] = useState<string | null>(null);
+
+  async function openFreeRead(book: Book, mode: "read" | "download") {
+    setReading(book.id);
+    const toastId = toast.loading(t("book.searching"));
+    try {
+      const found = await findFreeRead(book.title, book.author);
+      const url = mode === "read" ? (found?.readUrl ?? found?.downloadUrl) : (found?.downloadUrl ?? found?.readUrl);
+      if (!url) {
+        toast.error(t("book.none"), { id: toastId });
+        return;
+      }
+      toast.success(mode === "read" ? t("book.opened") : t("book.downloading"), { id: toastId });
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      if (mode === "download" && found?.fileName) a.download = found.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {
+      toast.error(t("book.none"), { id: toastId });
+    } finally {
+      setReading(null);
+    }
+  }
 
   const removeBook = useMutation({
     mutationFn: deleteBook,
