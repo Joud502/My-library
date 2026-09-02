@@ -260,15 +260,39 @@ function MonAlbum() {
                   {book.notes && (
                     <p className="line-clamp-2 pt-2 text-xs text-muted-foreground">{book.notes}</p>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-2 w-full text-destructive hover:text-destructive"
-                    onClick={() => removeBook.mutate(book.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer
-                  </Button>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Button variant="secondary" size="sm" onClick={() => setEditing(book)}>
+                      <Pencil className="mr-1 h-4 w-4" />
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={reading === book.id}
+                      onClick={() => openFreeRead(book, "read")}
+                    >
+                      <BookOpen className="mr-1 h-4 w-4" />
+                      Lire
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={reading === book.id}
+                      onClick={() => openFreeRead(book, "download")}
+                      aria-label="Télécharger le livre"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => removeBook.mutate(book.id)}
+                      aria-label="Supprimer le livre"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </li>
             ))}
