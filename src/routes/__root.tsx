@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider, themeInitScript } from "@/lib/theme";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { enforceSessionPolicy } from "@/lib/session-guard";
+import { LanguageProvider } from "@/lib/i18n";
 
 
 
@@ -139,12 +140,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <ThemeToggle className="fixed bottom-4 right-4 z-50" />
-        <Toaster position="top-center" richColors />
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <ThemeToggle className="fixed bottom-4 right-4 z-50" />
+          <Toaster position="top-center" richColors />
+        </ThemeProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
