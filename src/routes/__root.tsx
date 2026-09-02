@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider, themeInitScript } from "@/lib/theme";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { enforceSessionPolicy } from "@/lib/session-guard";
+import { LanguageProvider } from "@/lib/i18n";
 
 
 
