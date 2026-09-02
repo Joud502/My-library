@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Download, Layers, Plus, Search, Trash2, Users } from "lucide-react";
+import { BookOpen, Download, Layers, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { findFreeRead } from "@/lib/book-lookup";
 import { useLanguage } from "@/lib/i18n";
@@ -12,9 +12,19 @@ import {
   fetchOwnerCounts,
   fetchSeries,
   titleKey,
+  updateBook,
   STATUS_LABELS,
   type Book,
 } from "@/lib/library";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { CoverImage } from "@/components/CoverImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
