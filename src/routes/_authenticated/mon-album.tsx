@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Download, Layers, Plus, Search, Trash2, Users } from "lucide-react";
+import { BookOpen, Download, Layers, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { findFreeRead } from "@/lib/book-lookup";
 import { useLanguage } from "@/lib/i18n";
@@ -12,9 +12,20 @@ import {
   fetchOwnerCounts,
   fetchSeries,
   titleKey,
+  updateBook,
   STATUS_LABELS,
   type Book,
+  type BookUpdate,
 } from "@/lib/library";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { CoverImage } from "@/components/CoverImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +89,69 @@ function MonAlbum() {
 
   const { t } = useLanguage();
   const [reading, setReading] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Book | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    author: "",
+    genre: "",
+    year: "",
+    pages: "",
+    rating: "",
+    status: "a_lire",
+    seriesId: "aucune",
+    notes: "",
+  });
+
+  function startEditing(book: Book) {
+    setEditing(book);
+    setEditForm({
+      title: book.title,
+      author: book.author,
+      genre: book.genre ?? "",
+      year: book.published_year?.toString() ?? "",
+      pages: book.pages?.toString() ?? "",
+      rating: book.rating?.toString() ?? "",
+      status: book.status,
+      seriesId: book.series_id ?? "aucune",
+      notes: book.notes ?? "",
+    });
+  }
+
+  const saveBook = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: BookUpdate }) => updateBook(id, values),
+    onSuccess: () => {
+      toast.success("Livre modifié");
+      setEditing(null);
+      queryClient.invalidateQueries({ queryKey: ["books"] });
+    },
+    onError: () => toast.error("Modification impossible"),
+  });
+
+  function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const title = editForm.title.trim();
+    const author = editForm.author.trim();
+    if (!title || !author) {
+      toast.error("Le titre et l'auteur sont obligatoires");
+      return;
+    }
+    if (!editing) return;
+    const numberOrNull = (value: string) => value.trim() ? Number(value) : null;
+    saveBook.mutate({
+      id: editing.id,
+      values: {
+        title,
+        author,
+        genre: editForm.genre.trim() || null,
+        published_year: numberOrNull(editForm.year),
+        pages: numberOrNull(editForm.pages),
+        rating: numberOrNull(editForm.rating),
+        status: editForm.status,
+        notes: editForm.notes.trim() || null,
+        series_id: editForm.seriesId === "aucune" ? null : editForm.seriesId,
+      },
+    });
+  }
 
   async function openFreeRead(book: Book, mode: "read" | "download") {
     setReading(book.id);
@@ -260,15 +334,39 @@ function MonAlbum() {
                   {book.notes && (
                     <p className="line-clamp-2 pt-2 text-xs text-muted-foreground">{book.notes}</p>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-2 w-full text-destructive hover:text-destructive"
-                    onClick={() => removeBook.mutate(book.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer
-                  </Button>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Button variant="secondary" size="sm" onClick={() => startEditing(book)}>
+                      <Pencil className="mr-1 h-4 w-4" />
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={reading === book.id}
+                      onClick={() => openFreeRead(book, "read")}
+                    >
+                      <BookOpen className="mr-1 h-4 w-4" />
+                      Lire
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={reading === book.id}
+                      onClick={() => openFreeRead(book, "download")}
+                      aria-label="Télécharger le livre"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => removeBook.mutate(book.id)}
+                      aria-label="Supprimer le livre"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </li>
             ))}
@@ -323,6 +421,115 @@ function MonAlbum() {
           </ul>
         )}
       </section>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier le livre</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Titre *</Label>
+              <Input
+                id="edit-title"
+                value={editForm.title}
+                maxLength={200}
+                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-author">Auteur *</Label>
+              <Input
+                id="edit-author"
+                value={editForm.author}
+                maxLength={150}
+                onChange={(e) => setEditForm((f) => ({ ...f, author: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-genre">Genre</Label>
+                <Input
+                  id="edit-genre"
+                  value={editForm.genre}
+                  maxLength={80}
+                  onChange={(e) => setEditForm((f) => ({ ...f, genre: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-year">Année de parution</Label>
+                <Input
+                  id="edit-year"
+                  type="number"
+                  min={0}
+                  max={2100}
+                  value={editForm.year}
+                  onChange={(e) => setEditForm((f) => ({ ...f, year: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-pages">Nombre de pages</Label>
+                <Input
+                  id="edit-pages"
+                  type="number"
+                  min={0}
+                  max={100000}
+                  value={editForm.pages}
+                  onChange={(e) => setEditForm((f) => ({ ...f, pages: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-rating">Note (sur 5)</Label>
+                <Input
+                  id="edit-rating"
+                  type="number"
+                  min={0}
+                  max={5}
+                  value={editForm.rating}
+                  onChange={(e) => setEditForm((f) => ({ ...f, rating: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Statut de lecture</Label>
+                <Select value={editForm.status} onValueChange={(value) => setEditForm((f) => ({ ...f, status: value }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="a_lire">À lire</SelectItem>
+                    <SelectItem value="en_cours">En cours</SelectItem>
+                    <SelectItem value="lu">Lu</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Série</Label>
+                <Select value={editForm.seriesId} onValueChange={(value) => setEditForm((f) => ({ ...f, seriesId: value }))}>
+                  <SelectTrigger><SelectValue placeholder="Aucune" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="aucune">Aucune</SelectItem>
+                    {series.map((serie) => <SelectItem key={serie.id} value={serie.id}>{serie.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Commentaire</Label>
+              <Textarea
+                id="edit-notes"
+                rows={4}
+                maxLength={1000}
+                value={editForm.notes}
+                onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditing(null)}>Annuler</Button>
+              <Button type="submit" disabled={saveBook.isPending}>{saveBook.isPending ? "Enregistrement…" : "Enregistrer"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

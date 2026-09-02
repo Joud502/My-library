@@ -111,3 +111,20 @@ export async function getCoverUrl(path: string | null): Promise<string | null> {
   if (error) return null;
   return data?.signedUrl ?? null;
 }
+
+export type BookUpdate = {
+  title: string;
+  author: string;
+  genre: string | null;
+  published_year: number | null;
+  pages: number | null;
+  rating: number | null;
+  status: string;
+  notes: string | null;
+  series_id: string | null;
+};
+
+export async function updateBook(id: string, values: BookUpdate) {
+  const { error } = await supabase.from("books").update(values).eq("id", id);
+  if (error) throw error;
+}
